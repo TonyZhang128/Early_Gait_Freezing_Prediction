@@ -2,3 +2,6 @@
 *.mat
 *.pyc
 *.pt
+runs/
+*.md
+*.png

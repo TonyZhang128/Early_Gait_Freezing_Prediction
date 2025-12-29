@@ -156,15 +156,15 @@ def init_weights_random(m):
             m.bias.data.fill_(0.01)
 
 # 初始化模型和损失函数
-base_model = GSDNN2()  # 确保你初始化了基础模型
+base_model = GSDNN()  # 确保你初始化了基础模型
 encoder = SimCLRModel(base_model, out_dim=128).to(device)  # 创建SimCLR模型
 encoder.load_state_dict(torch.load("./save_model/best_modelGSDNNk3_27class_aug123.pth",weights_only=True),strict=False)  # 加载状态字典
 #strict=False
 #encoder.apply(init_weights)
 #encoder.apply(init_weights_random)
 # 冻结编码器的参数
-for param in encoder.encoder.parameters():
-     param.requires_grad = False
+# for param in encoder.encoder.parameters():
+#      param.requires_grad = False
 
 # 冻结投影头的参数
 #for param in encoder.projector.parameters():
@@ -196,9 +196,9 @@ def eval(model, dataloader):
     y_labels = np.concatenate(y_labels, axis=0)
     acc = np.mean(np.equal(y_preds, y_labels))
     # 计算评估指标
-    precision = precision_score(y_labels, y_preds, average='macro')
-    recall = recall_score(y_labels, y_preds, average='macro')
-    f1 = f1_score(y_labels, y_preds, average='macro')
+    precision = precision_score(y_labels, y_preds, average='macro', zero_division=0)
+    recall = recall_score(y_labels, y_preds, average='macro', zero_division=0)
+    f1 = f1_score(y_labels, y_preds, average='macro', zero_division=0)
     auc_sc = auc(y_labels, y_preds)
     return y_preds, y_labels, acc, precision, recall, f1, auc_sc
 
