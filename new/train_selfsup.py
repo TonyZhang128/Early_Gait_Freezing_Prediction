@@ -38,7 +38,7 @@ def parse_args():
     parser.add_argument('--views', type=int, default=2, help='对比学习的视图数量')
 
     # 模型参数
-    parser.add_argument("--model_type", type=str, default="GSDNN", help="模型类型, 可以选GSDNN,ResNet,EEGNet,Conformer")
+    parser.add_argument("--model_type", type=str, default="ResNet", help="模型类型, 可以选GSDNN,ResNet,EEGNet,Conformer")
     ## parameters for GSDNN
     parser.add_argument('--num_classes', type=int, default=1, help='输出类别数')
     parser.add_argument('--block_n', type=int, default=8, help='模块堆叠次数')
@@ -49,7 +49,9 @@ def parse_args():
     parser.add_argument('--dropout_GSDNN', type=int, default=0.2, help='GSDNN丢失概率')
     
     ## parameters for projection head
-    parser.add_argument('--out_dim', type=int, default=132, help='编码器输出维度')
+    ### GSDNN [132 128 256]
+    ### ResNet18 [64 128 256]
+    parser.add_argument('--out_dim', type=int, default=64, help='编码器输出维度')
     parser.add_argument('--proj_out_dim', type=int, default=128, help='投影头中间层维度')
     parser.add_argument('--contrastive_dim', type=int, default=256, help='进行对比学习的特征空间维度')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')

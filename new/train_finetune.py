@@ -22,36 +22,9 @@ from torchvision import transforms
 
 # 导入模型
 from models.DNN import DNN
-from models.GSDNN import GSDNN
-from models.GSDNN2 import GSDNN2
 from models.GSDNN_new import GSDNN_new
-from models.MSDNN import MSDNN
-from models.resnet import ResNet101
+from models.resnet import ResNet18
 
-
-# ================================ 配置和常量 ================================
-
-class Config:
-    """配置类，集中管理所有超参数"""
-    def __init__(self, args):
-        self.data_path = args.data_path
-        self.train_ratio = args.train_ratio
-        self.batch_size = args.batch_size
-        self.num_epochs = args.num_epochs
-        self.learning_rate = args.learning_rate
-        self.num_classes = args.num_classes
-        self.device = torch.device(args.device if torch.cuda.is_available() else "cpu")
-        self.log_dir = args.log_dir
-        self.model_save_dir = args.model_save_dir
-        self.pretrained_model = args.pretrained_model
-        self.model_type = args.model_type
-        self.freeze_encoder = args.freeze_encoder
-        self.augmentation_prob = args.augmentation_prob
-        self.freq_keep_ratio = args.freq_keep_ratio
-
-        # 创建必要的目录
-        Path(self.log_dir).mkdir(parents=True, exist_ok=True)
-        Path(self.model_save_dir).mkdir(parents=True, exist_ok=True)
 
 
 # ================================ 数据增强模块 ================================
@@ -148,8 +121,8 @@ def load_and_split_data(data_path, train_ratio=0.8, random_seed=42):
     # test_data = data_test
     # test_label = labels_test - 1
     
-    data = sio.loadmat(f'{data_path}/sub_test_data.mat')['sub_data']
-    labels = sio.loadmat(f'{data_path}/sub_test_label.mat')['sub_label'][0]
+    data = sio.loadmat(f'{data_path}/sub_data.mat')['sub_data']
+    labels = sio.loadmat(f'{data_path}/sub_label.mat')['sub_label'][0]
 
     # 打乱索引
     random_index = np.array(range(len(data)))
@@ -170,25 +143,25 @@ def load_and_split_data(data_path, train_ratio=0.8, random_seed=42):
     return train_data, test_data, train_label, test_label
 
 
-def create_dataloaders(config):
+def create_dataloaders(args):
     """
     创建数据加载器
 
     Args:
-        config: 配置对象
+        args: 参数对象
 
     Returns:
         train_loader, test_loader
     """
     # 加载数据
     train_data, test_data, train_label, test_label = load_and_split_data(
-        config.data_path, config.train_ratio
+        args.data_path, args.train_ratio
     )
 
     # 创建数据增强
     data_transforms = get_data_transforms(
-        config.augmentation_prob,
-        config.freq_keep_ratio
+        args.augmentation_prob,
+        args.freq_keep_ratio
     )
 
     # 创建数据集
@@ -209,13 +182,13 @@ def create_dataloaders(config):
     # 创建数据加载器
     train_loader = DataLoader(
         train_dataset,
-        batch_size=config.batch_size,
+        batch_size=args.batch_size,
         shuffle=True
     )
 
     test_loader = DataLoader(
         test_dataset,
-        batch_size=config.batch_size,
+        batch_size=args.batch_size,
         shuffle=False
     )
 
@@ -297,11 +270,8 @@ def get_model(model_type, num_classes=27, device='cpu'):
     """
     model_dict = {
         'DNN': DNN,
-        'GSDNN': GSDNN,
-        'GSDNN2': GSDNN2,
-        'GSDNN_new': GSDNN_new,
-        'MSDNN': MSDNN,
-        'ResNet101': ResNet101
+        'GSDNN': GSDNN_new,
+        'ResNet': ResNet18
     }
 
     if model_type not in model_dict:
@@ -368,6 +338,8 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device):
 
         total_loss += loss.item()
         num_batches += 1
+        if args.mode == 'debug':
+            break
 
     return total_loss / num_batches
 
@@ -537,30 +509,37 @@ def log_metrics_to_tensorboard(writer, metrics, epoch, phase='train'):
 
 # ================================ 主训练流程 ================================
 
-def train(config):
+def train(args):
     """
     主训练函数
 
     Args:
-        config: 配置对象
+        args: 参数对象
     """
+    # 设置device
+    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
+    
+    # 创建必要的目录
+    Path(args.log_dir).mkdir(parents=True, exist_ok=True)
+    Path(args.save_models).mkdir(parents=True, exist_ok=True)
+    
     # 创建数据加载器
     print("Creating dataloaders...")
-    train_loader, test_loader = create_dataloaders(config)
+    train_loader, test_loader = create_dataloaders(args)
     print(f"Train batches: {len(train_loader)}, Test batches: {len(test_loader)}")
 
     # 创建模型
-    print(f"Creating model: {config.model_type}")
-    model = get_model(config.model_type, config.num_classes, config.device)
+    print(f"Creating model: {args.model_type}")
+    model = get_model(args.model_type, args.num_classes, device)
 
     # 加载预训练权重
-    if config.pretrained_model and os.path.exists(config.pretrained_model):
-        print(f"Loading pretrained model from {config.pretrained_model}")
-        state_dict = torch.load(config.pretrained_model, weights_only=True)
+    if args.pretrained_model and os.path.exists(args.pretrained_model):
+        print(f"Loading pretrained model from {args.pretrained_model}")
+        state_dict = torch.load(args.pretrained_model, weights_only=True)
         model.encoder.load_state_dict(state_dict, strict=False)
 
     # 冻结编码器参数
-    if config.freeze_encoder:
+    if args.freeze_encoder:
         print("Freezing encoder parameters")
         for param in model.encoder.parameters():
             param.requires_grad = False
@@ -568,13 +547,13 @@ def train(config):
     # 创建优化器和损失函数
     optimizer = torch.optim.Adam(
         filter(lambda p: p.requires_grad, model.parameters()),
-        lr=config.learning_rate
+        lr=args.learning_rate
     )
     criterion = nn.CrossEntropyLoss()
 
     # 创建TensorBoard writer
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(config.log_dir, f"run_{timestamp}")
+    log_dir = os.path.join(args.log_dir, f"run_{timestamp}")
     writer = SummaryWriter(log_dir)
     print(f"TensorBoard logs will be saved to {log_dir}")
 
@@ -596,17 +575,17 @@ def train(config):
     best_test_acc = 0.0
 
     # 训练循环
-    print(f"\nStarting training for {config.num_epochs} epochs...")
-    for epoch in range(config.num_epochs):
+    print(f"\nStarting training for {args.num_epochs} epochs...")
+    for epoch in range(args.num_epochs):
         # 训练一个epoch
         train_loss = train_one_epoch(
-            model, train_loader, optimizer, criterion, config.device
+            model, train_loader, optimizer, criterion, device
         )
         history['losses'].append(train_loss)
 
         # 评估
-        train_metrics = evaluate(model, train_loader, config.device)
-        test_metrics = evaluate(model, test_loader, config.device)
+        train_metrics = evaluate(model, train_loader, device)
+        test_metrics = evaluate(model, test_loader, device)
 
         # 记录历史
         history['train_accs'].append(train_metrics['accuracy'])
@@ -631,7 +610,7 @@ def train(config):
         log_metrics_to_tensorboard(writer, test_metrics, epoch, 'test')
 
         # 打印进度
-        print(f'Epoch [{epoch+1}/{config.num_epochs}], '
+        print(f'Epoch [{epoch+1}/{args.num_epochs}], '
               f'Loss: {train_loss:.5f}, '
               f'Train Acc: {train_metrics["accuracy"]:.5f}, '
               f'Test Acc: {test_metrics["accuracy"]:.5f}')
@@ -640,16 +619,16 @@ def train(config):
         if test_metrics['accuracy'] > best_test_acc:
             best_test_acc = test_metrics['accuracy']
             best_model_path = os.path.join(
-                config.model_save_dir,
-                f'best_model_{config.model_type}.pth'
+                args.save_models,
+                f'best_model_{args.model_type}.pth'
             )
             torch.save(model.state_dict(), best_model_path)
             print(f'New best model saved with accuracy: {best_test_acc:.5f}')
 
     # 保存最终模型
     final_model_path = os.path.join(
-        config.model_save_dir,
-        f'final_model_{config.model_type}.pth'
+        args.save_models,
+        f'final_model_{args.model_type}.pth'
     )
     torch.save(model.state_dict(), final_model_path)
     print(f'Final model saved to {final_model_path}')
@@ -660,19 +639,19 @@ def train(config):
     compute_final_metrics(history)
 
     # 绘制训练曲线
-    plot_training_curves(
-        history['losses'],
-        history['train_accs'],
-        history['test_accs'],
-        save_path=os.path.join(config.model_save_dir, 'training_curves.png')
-    )
+    # plot_training_curves(
+    #     history['losses'],
+    #     history['train_accs'],
+    #     history['test_accs'],
+    #     save_path=os.path.join(args.save_models, 'training_curves.png')
+    # )
 
-    # 绘制混淆矩阵
-    plot_confusion_matrix(
-        test_metrics['labels'],
-        test_metrics['predictions'],
-        save_path=os.path.join(config.model_save_dir, 'confusion_matrix.png')
-    )
+    # # 绘制混淆矩阵
+    # plot_confusion_matrix(
+    #     test_metrics['labels'],
+    #     test_metrics['predictions'],
+    #     save_path=os.path.join(args.save_models, 'confusion_matrix.png')
+    # )
 
     return history, model
 
@@ -707,45 +686,35 @@ def compute_final_metrics(history):
 def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(description='步态识别分类训练')
-
+    parser.add_argument('--exp_name', type=str, default='Gait_finetune_training')
+    parser.add_argument('--mode', type=str, default='debug', help='normal, debug')
     # 数据相关
-    parser.add_argument('--data_path', type=str, default='data3',
-                       help='数据文件路径')
-    parser.add_argument('--train_ratio', type=float, default=0.8,
-                       help='训练集比例')
-    parser.add_argument('--batch_size', type=int, default=64,
-                       help='批次大小')
+    parser.add_argument('--data_path', type=str, default='data3', help='数据文件路径')
+    parser.add_argument('--train_ratio', type=float, default=0.7, help='训练集比例')
+    parser.add_argument('--batch_size', type=int, default=64, help='批次大小')
 
     # 训练相关
-    parser.add_argument('--num_epochs', type=int, default=200,
-                       help='训练轮数')
-    parser.add_argument('--learning_rate', type=float, default=3e-4,
-                       help='学习率')
-    parser.add_argument('--num_classes', type=int, default=27,
-                       help='分类数量')
+    parser.add_argument('--num_epochs', type=int, default=200, help='训练轮数')
+    parser.add_argument('--learning_rate', type=float, default=3e-4, help='学习率')
+    parser.add_argument('--num_classes', type=int, default=27, help='分类数量')
 
     # 模型相关
     parser.add_argument('--model_type', type=str, default='GSDNN',
                        choices=['DNN', 'GSDNN', 'GSDNN2', 'GSDNN_new', 'MSDNN', 'ResNet101'],
                        help='模型类型')
     parser.add_argument('--pretrained_model', type=str,
-                       default='./save_model_refactor/best_model.pth',
+                       default='./save_models/best_model.pth',
                        help='预训练模型路径') # './save_model/best_modelGSDNNk3_27class_aug123.pth'
-    parser.add_argument('--freeze_encoder', action='store_true',
-                       help='是否冻结编码器参数')
+    parser.add_argument('--freeze_encoder', action='store_true', help='是否冻结编码器参数')
 
     # 数据增强相关
-    parser.add_argument('--augmentation_prob', type=float, default=0.5,
-                       help='数据增强概率')
-    parser.add_argument('--freq_keep_ratio', type=float, default=0.6,
-                       help='频率成分保留比例')
+    parser.add_argument('--augmentation_prob', type=float, default=0.5, help='数据增强概率')
+    parser.add_argument('--freq_keep_ratio', type=float, default=0.6, help='频率成分保留比例')
 
     # 设备和路径
-    parser.add_argument('--device', type=str, default='cuda',
-                       help='设备（cuda/cpu）')
-    parser.add_argument('--log_dir', type=str, default='runs/classification',
-                       help='TensorBoard日志目录')
-    parser.add_argument('--model_save_dir', type=str, default='./save_model_finetue_frozen_refactor',
+    parser.add_argument('--device', type=str, default='cuda', help='设备（cuda/cpu）')
+    parser.add_argument('--log_dir', type=str, default='./runs', help='TensorBoard日志目录')
+    parser.add_argument('--save_dir', type=str, default='./save_models',
                        help='模型保存目录')
 
     return parser.parse_args()
@@ -758,25 +727,22 @@ def main():
     # 解析参数
     args = parse_args()
 
-    # 创建配置对象
-    config = Config(args)
-
     # 打印配置信息
     print("="*60)
     print("Training Configuration:")
     print("="*60)
-    print(f"Model: {config.model_type}")
-    print(f"Device: {config.device}")
-    print(f"Batch Size: {config.batch_size}")
-    print(f"Epochs: {config.num_epochs}")
-    print(f"Learning Rate: {config.learning_rate}")
-    print(f"Data Path: {config.data_path}")
-    print(f"Log Dir: {config.log_dir}")
-    print(f"Model Save Dir: {config.model_save_dir}")
+    print(f"Model: {args.model_type}")
+    print(f"Device: {args.device}")
+    print(f"Batch Size: {args.batch_size}")
+    print(f"Epochs: {args.num_epochs}")
+    print(f"Learning Rate: {args.learning_rate}")
+    print(f"Data Path: {args.data_path}")
+    print(f"Log Dir: {args.log_dir}")
+    print(f"Model Save Dir: {args.save_models}")
     print("="*60 + "\n")
 
     # 开始训练
-    history, model = train(config)
+    history, model = train(args)
 
     print("\nTraining completed!")
     print(f"Best test accuracy: {max(history['test_accs']):.5f}")
