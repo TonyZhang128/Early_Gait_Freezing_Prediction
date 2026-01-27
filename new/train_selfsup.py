@@ -38,7 +38,7 @@ def parse_args():
     parser.add_argument('--views', type=int, default=2, help='对比学习的视图数量')
 
     # 模型参数
-    parser.add_argument("--model_type", type=str, default="ResNet", help="模型类型, 可以选GSDNN,ResNet,EEGNet,Conformer")
+    parser.add_argument("--model_type", type=str, default="GSDNN", help="模型类型, 可以选GSDNN,ResNet,EEGNet,Conformer")
     ## parameters for GSDNN
     parser.add_argument('--num_classes', type=int, default=1, help='输出类别数')
     parser.add_argument('--block_n', type=int, default=8, help='模块堆叠次数')
@@ -46,12 +46,12 @@ def parse_args():
     parser.add_argument('--growth_rate', type=int, default=12, help='模块每叠一次，维度提升多少')
     parser.add_argument('--base_channels', type=int, default=48, help='初始特征维度')
     parser.add_argument('--stride', type=int, default=2, help='卷积步长')
-    parser.add_argument('--dropout_GSDNN', type=int, default=0.2, help='GSDNN丢失概率')
+    parser.add_argument('--dropout_GSDNN', type=float, default=0.2, help='GSDNN丢失概率')
     
     ## parameters for projection head
     ### GSDNN [132 128 256]
     ### ResNet18 [64 128 256]
-    parser.add_argument('--out_dim', type=int, default=64, help='编码器输出维度')
+    parser.add_argument('--out_dim', type=int, default=132, help='编码器输出维度')
     parser.add_argument('--proj_out_dim', type=int, default=128, help='投影头中间层维度')
     parser.add_argument('--contrastive_dim', type=int, default=256, help='进行对比学习的特征空间维度')
     parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
@@ -115,6 +115,7 @@ class GaitAugmentation:
         num_freqs = magnitude.shape[2]
         keep_indices = np.random.choice(num_freqs, int(num_freqs * keep_ratio), replace=False)
         mask = torch.zeros_like(magnitude, dtype=torch.bool)
+        # keep_indices = torch.from_numpy(keep_indices).to(data.device)  # 转torch张量+对齐设备
         mask[:, :, keep_indices] = 1
         fft_img = fft_img * mask
         img = torch.fft.ifftn(fft_img, dim=2)
@@ -126,7 +127,7 @@ class GaitAugmentation:
         return transforms.Compose([
             transforms.RandomApply([
                 # 弱增强操作
-                transforms.RandomResizedCrop((18, 101), scale=(0.3, 0.8), antialias=True),
+                transforms.RandomResizedCrop((18, 101), scale=(0.3, 0.8)), # , antialias=True
                 transforms.RandomErasing(p=0.5, scale=(0.2, 0.4), ratio=(0.3, 3.3), value=0),
                 transforms.Lambda(lambda x: cls.random_frequency_dropout(x, freq_keep_ratio)),
                 # 强增强操作

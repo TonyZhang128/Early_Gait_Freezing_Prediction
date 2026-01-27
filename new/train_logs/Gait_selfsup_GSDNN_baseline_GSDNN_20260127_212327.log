@@ -1,0 +1,90 @@
+Using device: cuda
+TensorBoard logs will be saved to: ./runs/GSDNN_exp/Gait_selfsup_GSDNN_baseline
+Models will be saved to: ./save_models/GSDNN_exp/Gait_selfsup_GSDNN_baseline
+Loading data...
+Data loaded. Total batches: 1163. Total train data: 74432
+Creating model...
+Starting training...
+Epoch 1/40, Average Loss: 3.957405
+Epoch 1, New minimum loss: 3.957405, Best model saved.
+Epoch 2/40, Average Loss: 3.795625
+Epoch 2, New minimum loss: 3.795625, Best model saved.
+Epoch 3/40, Average Loss: 3.636986
+Epoch 3, New minimum loss: 3.636986, Best model saved.
+Epoch 4/40, Average Loss: 3.530612
+Epoch 4, New minimum loss: 3.530612, Best model saved.
+Epoch 5/40, Average Loss: 3.434150
+Epoch 5, New minimum loss: 3.434150, Best model saved.
+Epoch 6/40, Average Loss: 3.363256
+Epoch 6, New minimum loss: 3.363256, Best model saved.
+Epoch 7/40, Average Loss: 3.302462
+Epoch 7, New minimum loss: 3.302462, Best model saved.
+Epoch 8/40, Average Loss: 3.255404
+Epoch 8, New minimum loss: 3.255404, Best model saved.
+Epoch 9/40, Average Loss: 3.208766
+Epoch 9, New minimum loss: 3.208766, Best model saved.
+Epoch 10/40, Average Loss: 3.192906
+Epoch 10, New minimum loss: 3.192906, Best model saved.
+Epoch 11/40, Average Loss: 3.166536
+Epoch 11, New minimum loss: 3.166536, Best model saved.
+Epoch 12/40, Average Loss: 3.148081
+Epoch 12, New minimum loss: 3.148081, Best model saved.
+Epoch 13/40, Average Loss: 3.125575
+Epoch 13, New minimum loss: 3.125575, Best model saved.
+Epoch 14/40, Average Loss: 3.117696
+Epoch 14, New minimum loss: 3.117696, Best model saved.
+Epoch 15/40, Average Loss: 3.101107
+Epoch 15, New minimum loss: 3.101107, Best model saved.
+Epoch 16/40, Average Loss: 3.099316
+Epoch 16, New minimum loss: 3.099316, Best model saved.
+Epoch 17/40, Average Loss: 3.099802
+Epoch 18/40, Average Loss: 3.096051
+Epoch 18, New minimum loss: 3.096051, Best model saved.
+Epoch 19/40, Average Loss: 3.071914
+Epoch 19, New minimum loss: 3.071914, Best model saved.
+Epoch 20/40, Average Loss: 3.066838
+Epoch 20, New minimum loss: 3.066838, Best model saved.
+Epoch 21/40, Average Loss: 3.062936
+Epoch 21, New minimum loss: 3.062936, Best model saved.
+Epoch 22/40, Average Loss: 3.053354
+Epoch 22, New minimum loss: 3.053354, Best model saved.
+Epoch 23/40, Average Loss: 3.052515
+Epoch 23, New minimum loss: 3.052515, Best model saved.
+Epoch 24/40, Average Loss: 3.050681
+Epoch 24, New minimum loss: 3.050681, Best model saved.
+Epoch 25/40, Average Loss: 3.046361
+Epoch 25, New minimum loss: 3.046361, Best model saved.
+Epoch 26/40, Average Loss: 3.041187
+Epoch 26, New minimum loss: 3.041187, Best model saved.
+Epoch 27/40, Average Loss: 3.036302
+Epoch 27, New minimum loss: 3.036302, Best model saved.
+Epoch 28/40, Average Loss: 3.029005
+Epoch 28, New minimum loss: 3.029005, Best model saved.
+Epoch 29/40, Average Loss: 3.026059
+Epoch 29, New minimum loss: 3.026059, Best model saved.
+Epoch 30/40, Average Loss: 3.020757
+Epoch 30, New minimum loss: 3.020757, Best model saved.
+Epoch 31/40, Average Loss: 3.016124
+Epoch 31, New minimum loss: 3.016124, Best model saved.
+Epoch 32/40, Average Loss: 3.016064
+Epoch 32, New minimum loss: 3.016064, Best model saved.
+Epoch 33/40, Average Loss: 3.010975
+Epoch 33, New minimum loss: 3.010975, Best model saved.
+Epoch 34/40, Average Loss: 3.007985
+Epoch 34, New minimum loss: 3.007985, Best model saved.
+Epoch 35/40, Average Loss: 3.003512
+Epoch 35, New minimum loss: 3.003512, Best model saved.
+Epoch 36/40, Average Loss: 3.001335
+Epoch 36, New minimum loss: 3.001335, Best model saved.
+Epoch 37/40, Average Loss: 2.997971
+Epoch 37, New minimum loss: 2.997971, Best model saved.
+Epoch 38/40, Average Loss: 2.997118
+Epoch 38, New minimum loss: 2.997118, Best model saved.
+Epoch 39/40, Average Loss: 2.992370
+Epoch 39, New minimum loss: 2.992370, Best model saved.
+Epoch 40/40, Average Loss: 2.991727
+Epoch 40, New minimum loss: 2.991727, Best model saved.
+Training completed!
+Minimum loss: 2.991727
+All results saved to: ./save_models/GSDNN_exp/Gait_selfsup_GSDNN_baseline
+View TensorBoard logs with: tensorboard --logdir=./runs/GSDNN_exp/Gait_selfsup_GSDNN_baseline
