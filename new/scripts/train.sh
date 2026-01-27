@@ -6,16 +6,16 @@ set -e  # 遇到错误立即退出，保证训练稳定性
 
 # ======================== 基础环境配置 ========================
 # 替换为你的Python虚拟环境激活路径（无需则注释）
-VENV_PATH="/home/user/miniconda3/envs/gait_env/bin/activate"
+VENV_PATH="/root/miniconda3/envs/d2_cuda118/bin/activate"
 # 训练主脚本名称（如train.py/main.py，需替换为你的实际脚本名）
-TRAIN_SCRIPT="train.py"
+TRAIN_SCRIPT="train_selfsup.py"
 # 日志目录（自动创建，避免手动操作）
 LOG_DIR="./train_logs"
 mkdir -p ${LOG_DIR}
 
 # ======================== 核心训练参数配置 ========================
 # 基础配置
-EXP_NAME="Gait_contrastive_GSDNN_final"
+EXP_NAME="Gait_selfsup_GSDNN_baseline"
 MODE="normal"  # debug/normal，debug模式建议减小batch_size和epochs
 SEED=42
 DEVICE="cuda"  # cuda/cpu，自动检测可设为None
@@ -115,7 +115,6 @@ echo -e "\n【即将执行的训练命令】:"
 echo "=============================================================="
 echo ${TRAIN_CMD}  # 单行输出（便于复制执行）
 echo "=============================================================="
-echo -e "注：以上命令会同时输出到终端和日志文件\n"
 
 # 执行训练并记录日志（终端+文件双输出）
 ${TRAIN_CMD} 2>&1 | tee ${LOG_DIR}/${EXP_NAME}_${MODEL_TYPE}_$(date +%Y%m%d_%H%M%S).log
