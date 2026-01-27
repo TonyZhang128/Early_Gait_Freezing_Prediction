@@ -200,7 +200,7 @@ def create_dataloaders(args):
 class SimCLREncoder(nn.Module):
     """SimCLR风格的编码器"""
 
-    def __init__(self, base_model, out_dim=132, proj_out_dim=128, dropout=0.5):
+    def __init__(self, base_model, out_dim=132, proj_out_dim=128, contrastive_dim=256, dropout=0.5):
         """
         Args:
             base_model: 基础模型
@@ -216,7 +216,7 @@ class SimCLREncoder(nn.Module):
         self.projector = nn.Sequential(
             nn.Linear(out_dim, proj_out_dim),
             nn.ReLU(inplace=True),
-            nn.Linear(proj_out_dim, out_dim)
+            nn.Linear(proj_out_dim, contrastive_dim)
         )
 
     def forward(self, x):
@@ -256,7 +256,7 @@ class ClassificationModel(nn.Module):
         return self.classifier(h)
 
 
-def get_model(model_type, num_classes=27, device='cpu'):
+def get_model(model_type, args, num_classes=27, device='cpu'):
     """
     根据类型获取模型
 
@@ -278,8 +278,8 @@ def get_model(model_type, num_classes=27, device='cpu'):
         raise ValueError(f"Unsupported model type: {model_type}")
 
     base_model = model_dict[model_type]()
-    encoder = SimCLREncoder(base_model, out_dim=132, proj_out_dim=128)
-    model = ClassificationModel(encoder, num_features=132, num_classes=num_classes)
+    encoder = SimCLREncoder(base_model, args.out_dim, args.proj_out_dim, args.contrastive_dim, args.dropout)
+    model = ClassificationModel(encoder, num_features=args.out_dim, num_classes=num_classes)
 
     return model.to(device)
 
@@ -302,7 +302,7 @@ def init_weights_normal(m):
 
 # ================================ 训练和评估模块 ================================
 
-def train_one_epoch(model, dataloader, optimizer, criterion, device):
+def train_one_epoch(model, dataloader, optimizer, criterion, device, args):
     """
     训练一个epoch
 
@@ -521,16 +521,17 @@ def train(args):
     
     # 创建必要的目录
     Path(args.log_dir).mkdir(parents=True, exist_ok=True)
-    Path(args.save_models).mkdir(parents=True, exist_ok=True)
+    Path(args.save_dir).mkdir(parents=True, exist_ok=True)
     
     # 创建数据加载器
     print("Creating dataloaders...")
     train_loader, test_loader = create_dataloaders(args)
-    print(f"Train batches: {len(train_loader)}, Test batches: {len(test_loader)}")
+    print(f"Train batches: {len(train_loader)}, Total train data:{len(train_loader)*args.batch_size} \
+          Test batches: {len(test_loader)}, Total test data:{len(test_loader)*args.batch_size}")
 
     # 创建模型
     print(f"Creating model: {args.model_type}")
-    model = get_model(args.model_type, args.num_classes, device)
+    model = get_model(args.model_type, args, args.num_classes, device)
 
     # 加载预训练权重
     if args.pretrained_model and os.path.exists(args.pretrained_model):
@@ -579,7 +580,7 @@ def train(args):
     for epoch in range(args.num_epochs):
         # 训练一个epoch
         train_loss = train_one_epoch(
-            model, train_loader, optimizer, criterion, device
+            model, train_loader, optimizer, criterion, device, args
         )
         history['losses'].append(train_loss)
 
@@ -619,7 +620,7 @@ def train(args):
         if test_metrics['accuracy'] > best_test_acc:
             best_test_acc = test_metrics['accuracy']
             best_model_path = os.path.join(
-                args.save_models,
+                args.save_dir,
                 f'best_model_{args.model_type}.pth'
             )
             torch.save(model.state_dict(), best_model_path)
@@ -627,7 +628,7 @@ def train(args):
 
     # 保存最终模型
     final_model_path = os.path.join(
-        args.save_models,
+        args.save_dir,
         f'final_model_{args.model_type}.pth'
     )
     torch.save(model.state_dict(), final_model_path)
@@ -643,14 +644,14 @@ def train(args):
     #     history['losses'],
     #     history['train_accs'],
     #     history['test_accs'],
-    #     save_path=os.path.join(args.save_models, 'training_curves.png')
+    #     save_path=os.path.join(args.save_dir, 'training_curves.png')
     # )
 
     # # 绘制混淆矩阵
     # plot_confusion_matrix(
     #     test_metrics['labels'],
     #     test_metrics['predictions'],
-    #     save_path=os.path.join(args.save_models, 'confusion_matrix.png')
+    #     save_path=os.path.join(args.save_dir, 'confusion_matrix.png')
     # )
 
     return history, model
@@ -689,12 +690,12 @@ def parse_args():
     parser.add_argument('--exp_name', type=str, default='Gait_finetune_training')
     parser.add_argument('--mode', type=str, default='debug', help='normal, debug')
     # 数据相关
-    parser.add_argument('--data_path', type=str, default='data3', help='数据文件路径')
+    parser.add_argument('--data_path', type=str, default='./datasets/data_10000/', help='数据文件路径')
     parser.add_argument('--train_ratio', type=float, default=0.7, help='训练集比例')
     parser.add_argument('--batch_size', type=int, default=64, help='批次大小')
 
     # 训练相关
-    parser.add_argument('--num_epochs', type=int, default=200, help='训练轮数')
+    parser.add_argument('--num_epochs', type=int, default=20, help='训练轮数')
     parser.add_argument('--learning_rate', type=float, default=3e-4, help='学习率')
     parser.add_argument('--num_classes', type=int, default=27, help='分类数量')
 
@@ -703,10 +704,18 @@ def parse_args():
                        choices=['DNN', 'GSDNN', 'GSDNN2', 'GSDNN_new', 'MSDNN', 'ResNet101'],
                        help='模型类型')
     parser.add_argument('--pretrained_model', type=str,
-                       default='./save_models/best_model.pth',
+                       default='./save_models/Gait_self_supervised_training/best_model.pth',
                        help='预训练模型路径') # './save_model/best_modelGSDNNk3_27class_aug123.pth'
     parser.add_argument('--freeze_encoder', action='store_true', help='是否冻结编码器参数')
 
+    ## parameters for projection head
+    ### GSDNN [132 128 256]
+    ### ResNet18 [64 128 256]
+    parser.add_argument('--out_dim', type=int, default=132, help='编码器输出维度')
+    parser.add_argument('--proj_out_dim', type=int, default=128, help='投影头中间层维度')
+    parser.add_argument('--contrastive_dim', type=int, default=256, help='进行对比学习的特征空间维度')
+    parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
+    
     # 数据增强相关
     parser.add_argument('--augmentation_prob', type=float, default=0.5, help='数据增强概率')
     parser.add_argument('--freq_keep_ratio', type=float, default=0.6, help='频率成分保留比例')
@@ -717,7 +726,56 @@ def parse_args():
     parser.add_argument('--save_dir', type=str, default='./save_models',
                        help='模型保存目录')
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    
+    # 打印所有配置信息
+    print("="*60)
+    print("📋 步态识别训练配置信息")
+    print("="*60)
+    
+    # 按类别分组打印，让输出更清晰
+    # 基础配置
+    print("\n[基础配置]")
+    print(f"  实验名称 (exp_name): {args.exp_name}")
+    print(f"  运行模式 (mode): {args.mode}")
+    
+    # 数据相关
+    print("\n[数据相关]")
+    print(f"  数据路径 (data_path): {args.data_path}")
+    print(f"  训练集比例 (train_ratio): {args.train_ratio}")
+    print(f"  批次大小 (batch_size): {args.batch_size}")
+    
+    # 训练相关
+    print("\n[训练相关]")
+    print(f"  训练轮数 (num_epochs): {args.num_epochs}")
+    print(f"  学习率 (learning_rate): {args.learning_rate}")
+    print(f"  分类数量 (num_classes): {args.num_classes}")
+    
+    # 模型相关
+    print("\n[模型相关]")
+    print(f"  模型类型 (model_type): {args.model_type}")
+    print(f"  预训练模型路径 (pretrained_model): {args.pretrained_model}")
+    print(f"  冻结编码器 (freeze_encoder): {args.freeze_encoder}")
+    print(f"  编码器输出维度 (out_dim): {args.out_dim}")
+    print(f"  投影头中间层维度 (proj_out_dim): {args.proj_out_dim}")
+    print(f"  对比学习特征维度 (contrastive_dim): {args.contrastive_dim}")
+    print(f"  Dropout概率 (dropout): {args.dropout}")
+    
+    # 数据增强相关
+    print("\n[数据增强相关]")
+    print(f"  数据增强概率 (augmentation_prob): {args.augmentation_prob}")
+    print(f"  频率成分保留比例 (freq_keep_ratio): {args.freq_keep_ratio}")
+    
+    # 设备和路径
+    print("\n[设备和路径]")
+    print(f"  设备 (device): {args.device}")
+    print(f"  TensorBoard日志目录 (log_dir): {args.log_dir}")
+    print(f"  模型保存目录 (save_dir): {args.save_dir}")
+    
+    print("\n" + "="*60)
+    
+    return args
+
 
 
 # ================================ 主入口 ================================
@@ -726,20 +784,6 @@ def main():
     """主函数"""
     # 解析参数
     args = parse_args()
-
-    # 打印配置信息
-    print("="*60)
-    print("Training Configuration:")
-    print("="*60)
-    print(f"Model: {args.model_type}")
-    print(f"Device: {args.device}")
-    print(f"Batch Size: {args.batch_size}")
-    print(f"Epochs: {args.num_epochs}")
-    print(f"Learning Rate: {args.learning_rate}")
-    print(f"Data Path: {args.data_path}")
-    print(f"Log Dir: {args.log_dir}")
-    print(f"Model Save Dir: {args.save_models}")
-    print("="*60 + "\n")
 
     # 开始训练
     history, model = train(args)

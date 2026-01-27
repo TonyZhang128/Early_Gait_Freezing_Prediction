@@ -27,7 +27,7 @@ from models.Conformer import Conformer
 
 def parse_args():
     """解析命令行参数，遵循KISS原则：配置集中管理"""
-    parser = argparse.ArgumentParser(description='步态识别对比学习训练')
+    parser = argparse.ArgumentParser(description='步态识别对比学习预训练')
     parser.add_argument('--exp_name', type=str, default='Gait_self_supervised_training')
     parser.add_argument('--mode', type=str, default='debug', help='normal, debug')
 
@@ -74,7 +74,71 @@ def parse_args():
     parser.add_argument('--device', type=str, default=None, help='训练设备（cuda/cpu，默认自动检测）')
     parser.add_argument('--seed', type=int, default=42, help='随机种子')
 
-    return parser.parse_args()
+    args = parser.parse_args()
+    
+    # 自动检测设备（如果未指定）
+    if args.device is None:
+        args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    
+    # 打印所有配置信息
+    print("="*70)
+    print("📊 步态识别对比学习训练配置信息")
+    print("="*70)
+    
+    # 基础配置
+    print("\n[基础配置]")
+    print(f"  实验名称      (exp_name): {args.exp_name}")
+    print(f"  运行模式      (mode): {args.mode}")
+    print(f"  随机种子      (seed): {args.seed}")
+    
+    # 数据参数
+    print("\n[数据参数]")
+    print(f"  数据路径      (data_path): {args.data_path}")
+    print(f"  批次大小      (batch_size): {args.batch_size}")
+    print(f"  加载线程数    (num_workers): {args.num_workers}")
+    print(f"  对比视图数    (views): {args.views}")
+    
+    # 模型参数
+    print("\n[模型参数]")
+    print(f"  模型类型      (model_type): {args.model_type}")
+    print(f"  输出类别数    (num_classes): {args.num_classes}")
+    print(f"  GSDNN模块堆叠次数 (block_n): {args.block_n}")
+    print(f"  数据输入维度  (init_channels): {args.init_channels}")
+    print(f"  维度增长速率  (growth_rate): {args.growth_rate}")
+    print(f"  初始特征维度  (base_channels): {args.base_channels}")
+    print(f"  卷积步长      (stride): {args.stride}")
+    print(f"  GSDNN dropout (dropout_GSDNN): {args.dropout_GSDNN}")
+    print(f"  编码器输出维度 (out_dim): {args.out_dim}")
+    print(f"  投影头中间维度 (proj_out_dim): {args.proj_out_dim}")
+    print(f"  对比学习维度  (contrastive_dim): {args.contrastive_dim}")
+    print(f"  Dropout概率   (dropout): {args.dropout}")
+    
+    # 训练参数
+    print("\n[训练参数]")
+    print(f"  训练轮数      (epochs): {args.epochs}")
+    print(f"  学习率        (lr): {args.lr}")
+    print(f"  温度参数      (temperature): {args.temperature}")
+    
+    # 数据增强参数
+    print("\n[数据增强参数]")
+    print(f"  频率保留比例  (freq_keep_ratio): {args.freq_keep_ratio}")
+    
+    # 保存和日志参数
+    print("\n[保存和日志参数]")
+    print(f"  模型保存目录  (save_dir): {args.save_dir}")
+    print(f"  日志目录      (log_dir): {args.log_dir}")
+    print(f"  保存频率      (save_freq): {args.save_freq}")
+    
+    # 设备参数
+    print("\n[设备参数]")
+    print(f"  训练设备      (device): {args.device}")
+    if args.device == 'cuda':
+        print(f"  GPU数量       : {torch.cuda.device_count()}")
+        print(f"  当前GPU       : {torch.cuda.get_device_name(0)}")
+    
+    print("\n" + "="*70)
+    
+    return args
 
 
 def set_seed(seed):
