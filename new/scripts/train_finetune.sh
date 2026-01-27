@@ -8,15 +8,15 @@ set -e  # 遇到错误立即退出，保证训练稳定性
 # 替换为你的Python虚拟环境激活路径（无需则注释）
 VENV_PATH="/home/user/miniconda3/envs/gait_env/bin/activate"
 # 训练主脚本名称（如train.py/main.py，需替换为你的实际脚本名）
-TRAIN_SCRIPT="train.py"
+TRAIN_SCRIPT="train_finetune.py"
 # 日志目录（自动创建，避免手动操作）
 LOG_DIR="./train_logs"
 mkdir -p ${LOG_DIR}
 
 # ======================== 核心训练参数配置 ========================
 # 基础配置
-EXP_NAME="Gait_finetune_GSDNN_final"
-MODE="debug"  # normal/debug，debug模式建议减小batch_size和epochs
+EXP_NAME="Gait_finetune_GSDNN_baseline"
+MODE="normal"  # normal/debug，debug模式建议减小batch_size和epochs
 SEED=42
 DEVICE="cuda"  # cuda/cpu，自动检测可设为None
 
@@ -29,7 +29,7 @@ NUM_WORKERS=4  # 建议设为CPU核心数（如4/8），比0效率更高
 # 模型参数（分类训练专属，适配多模型类型）
 MODEL_TYPE="GSDNN"  # 可选：DNN/GSDNN/GSDNN2/GSDNN_new/MSDNN/ResNet101
 NUM_CLASSES=27      # 分类数量（分类训练核心参数）
-PRETRAINED_MODEL="./save_models/Gait_self_supervised_training/best_model.pth"  # 预训练模型路径
+PRETRAINED_MODEL="./save_models/GSDNN_exp/Gait_selfsup_GSDNN_baseline/best_model.pth"  # 预训练模型路径
 FREEZE_ENCODER="False"  # True/False，是否冻结编码器参数
 
 ## 投影头通用参数（分类训练保留投影头配置）
@@ -39,7 +39,7 @@ CONTRASTIVE_DIM=256
 DROPOUT=0.5
 
 # 训练参数
-NUM_EPOCHS=20
+NUM_EPOCHS=150
 LEARNING_RATE=3e-4
 
 # 数据增强参数
@@ -47,8 +47,8 @@ AUGMENTATION_PROB=0.5  # 数据增强概率
 FREQ_KEEP_RATIO=0.6    # 频率成分保留比例
 
 # 保存和日志参数
-SAVE_DIR="./save_models/${MODEL_TYPE}_finetune_exp"  # 按模型类型分目录
-LOG_DIR_TB="./runs/${MODEL_TYPE}_finetune_exp"       # TensorBoard日志目录
+SAVE_DIR="./save_models/${MODEL_TYPE}_exp"  # 按模型类型分目录
+LOG_DIR_TB="./runs/${MODEL_TYPE}_exp"       # TensorBoard日志目录
 
 # ======================== GPU配置 ========================
 # 指定GPU（单卡：0，多卡：0,1,2），注释则自动使用所有可用GPU

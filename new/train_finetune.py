@@ -5,6 +5,7 @@
 
 import argparse
 import os
+import random
 from pathlib import Path
 from datetime import datetime
 
@@ -183,13 +184,15 @@ def create_dataloaders(args):
     train_loader = DataLoader(
         train_dataset,
         batch_size=args.batch_size,
-        shuffle=True
+        shuffle=True,
+        num_workers=args.num_workers
     )
 
     test_loader = DataLoader(
         test_dataset,
         batch_size=args.batch_size,
-        shuffle=False
+        shuffle=False,
+        num_workers=args.num_workers
     )
 
     return train_loader, test_loader
@@ -506,7 +509,17 @@ def log_metrics_to_tensorboard(writer, metrics, epoch, phase='train'):
     writer.add_scalar(f'{prefix}F1', metrics['f1'], epoch)
     writer.add_scalar(f'{prefix}AUC', metrics['auc'], epoch)
 
-
+def set_seed(seed):
+    """设置随机种子，确保实验可重复性"""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        
 # ================================ 主训练流程 ================================
 
 def train(args):
@@ -516,6 +529,8 @@ def train(args):
     Args:
         args: 参数对象
     """
+    set_seed(args.seed)
+    
     # 设置device
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     
@@ -536,7 +551,12 @@ def train(args):
     # 加载预训练权重
     if args.pretrained_model and os.path.exists(args.pretrained_model):
         print(f"Loading pretrained model from {args.pretrained_model}")
-        state_dict = torch.load(args.pretrained_model, weights_only=True)
+        # state_dict = torch.load(args.pretrained_model, weights_only=True)
+        if torch.__version__ >= "1.13.0":
+            state_dict = torch.load(args.pretrained_model, weights_only=True)
+        else:
+            # 低版本移除 weights_only 参数
+            state_dict = torch.load(args.pretrained_model)
         model.encoder.load_state_dict(state_dict, strict=False)
 
     # 冻结编码器参数
@@ -554,9 +574,15 @@ def train(args):
 
     # 创建TensorBoard writer
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(args.log_dir, f"run_{timestamp}")
+    log_dir = os.path.join(args.log_dir, args.exp_name)
+    save_dir = os.path.join(args.save_dir, args.exp_name)
+    os.makedirs(log_dir, exist_ok=True)
+    os.makedirs(save_dir, exist_ok=True)
+    
+    
     writer = SummaryWriter(log_dir)
     print(f"TensorBoard logs will be saved to {log_dir}")
+    print(f'Models will be saved to: {save_dir}')
 
     # 训练历史记录
     history = {
@@ -620,16 +646,16 @@ def train(args):
         if test_metrics['accuracy'] > best_test_acc:
             best_test_acc = test_metrics['accuracy']
             best_model_path = os.path.join(
-                args.save_dir,
-                f'best_model_{args.model_type}.pth'
+                save_dir,
+                f'best_acc{test_metrics["accuracy"]:.5f}_model_{args.model_type}.pth'
             )
             torch.save(model.state_dict(), best_model_path)
             print(f'New best model saved with accuracy: {best_test_acc:.5f}')
 
     # 保存最终模型
     final_model_path = os.path.join(
-        args.save_dir,
-        f'final_model_{args.model_type}.pth'
+        save_dir,
+        f'final_acc_model_{args.model_type}.pth'
     )
     torch.save(model.state_dict(), final_model_path)
     print(f'Final model saved to {final_model_path}')
@@ -638,6 +664,9 @@ def train(args):
 
     # 计算最后10个epoch的平均指标
     compute_final_metrics(history)
+    
+    print(f'All results saved to: {save_dir}')
+    print(f"View TensorBoard logs with: tensorboard --logdir={log_dir}")
 
     # 绘制训练曲线
     # plot_training_curves(
@@ -693,6 +722,7 @@ def parse_args():
     parser.add_argument('--data_path', type=str, default='./datasets/data_10000/', help='数据文件路径')
     parser.add_argument('--train_ratio', type=float, default=0.7, help='训练集比例')
     parser.add_argument('--batch_size', type=int, default=64, help='批次大小')
+    parser.add_argument('--num_workers', type=int, default=0, help='数据加载线程数')
 
     # 训练相关
     parser.add_argument('--num_epochs', type=int, default=20, help='训练轮数')
@@ -704,7 +734,7 @@ def parse_args():
                        choices=['DNN', 'GSDNN', 'GSDNN2', 'GSDNN_new', 'MSDNN', 'ResNet101'],
                        help='模型类型')
     parser.add_argument('--pretrained_model', type=str,
-                       default='./save_models/Gait_self_supervised_training/best_model.pth',
+                       default='./save_models/GSDNN_exp/Gait_selfsup_GSDNN_baseline/best_model.pth',
                        help='预训练模型路径') # './save_model/best_modelGSDNNk3_27class_aug123.pth'
     parser.add_argument('--freeze_encoder', action='store_true', help='是否冻结编码器参数')
 
@@ -722,6 +752,7 @@ def parse_args():
 
     # 设备和路径
     parser.add_argument('--device', type=str, default='cuda', help='设备（cuda/cpu）')
+    parser.add_argument('--seed', type=int, default=42, help='随机种子')
     parser.add_argument('--log_dir', type=str, default='./runs', help='TensorBoard日志目录')
     parser.add_argument('--save_dir', type=str, default='./save_models',
                        help='模型保存目录')
@@ -738,12 +769,14 @@ def parse_args():
     print("\n[基础配置]")
     print(f"  实验名称 (exp_name): {args.exp_name}")
     print(f"  运行模式 (mode): {args.mode}")
-    
+    print(f"  随机种子      (seed): {args.seed}")
+
     # 数据相关
     print("\n[数据相关]")
     print(f"  数据路径 (data_path): {args.data_path}")
     print(f"  训练集比例 (train_ratio): {args.train_ratio}")
     print(f"  批次大小 (batch_size): {args.batch_size}")
+    print(f"  加载线程数    (num_workers): {args.num_workers}")
     
     # 训练相关
     print("\n[训练相关]")
