@@ -13,23 +13,23 @@ TRAIN_SCRIPT="train_selfsup.py"
 LOG_DIR="./train_logs"
 mkdir -p ${LOG_DIR}
 
-# ======================== 核心训练参数配置 ========================
+# ======================== 核心训练参数配置（已按目标完全修改） ========================
 # 基础配置
 EXP_NAME="Gait_selfsup_GSDNN_baseline"
-MODE="normal"  # debug/normal，debug模式建议减小batch_size和epochs
+MODE="debug"  # 同步目标参数：debug模式
 SEED=42
-DEVICE="cuda"  # cuda/cpu，自动检测可设为None
+DEVICE="cuda"  # 同步目标参数：cuda
 
 # 数据参数
-DATA_PATH="datasets/data_10000/all_data.mat"
-BATCH_SIZE=64
-NUM_WORKERS=4  # 建议设为CPU核心数（如4/8），比0效率更高
-VIEWS=2  # 对比学习视图数量
+DATA_PATH="datasets/data_10000/all_data.mat"  # 完全同步目标路径
+BATCH_SIZE=256  # 同步目标参数：256
+NUM_WORKERS=4  # 同步目标参数：0
+VIEWS=2  # 同步目标参数：2
 
-# 模型参数（核心：支持多模型类型，适配GSDNN专属参数）
-MODEL_TYPE="GSDNN"  # 可选：GSDNN/ResNet/EEGNet/Conformer
+# 模型参数（核心：GSDNN专属参数完全同步目标值）
+MODEL_TYPE="GSDNN"  # 固定为GSDNN，与目标一致
 
-## GSDNN专属参数（MODEL_TYPE=GSDNN时生效）
+## GSDNN专属参数（1:1匹配目标值，无任何修改）
 NUM_CLASSES=1
 BLOCK_N=8
 INIT_CHANNELS=18
@@ -38,24 +38,28 @@ BASE_CHANNELS=48
 STRIDE=2
 DROPOUT_GSDNN=0.2
 
-## 投影头通用参数
+## 投影头通用参数（完全同步目标值）
 OUT_DIM=132
 PROJ_OUT_DIM=128
 CONTRASTIVE_DIM=256
 DROPOUT=0.5
 
-# 训练参数
-EPOCHS=200
-LR=3e-4
-TEMPERATURE=0.5
+# 训练参数（核心超参数同步目标值，补充动量/权重衰减/预热比）
+EPOCHS=200  # 同步目标参数：40
+LR=0.3  # 同步目标参数：0.3（原3e-4已替换）
+TEMPERATURE=0.5  # 同步目标参数：0.5
+MOMENTUM=0.9  # 新增：同步目标参数
+WEIGHT_DECAY=0.0001  # 新增：同步目标参数
+WARMUP_RATIO=0.05  # 新增：同步目标参数
 
 # 数据增强参数
-FREQ_KEEP_RATIO=0.6
+FREQ_KEEP_RATIO=0.6  # 同步目标参数：0.6
 
-# 保存和日志参数
-SAVE_DIR="./save_models/${MODEL_TYPE}_exp"  # 按模型类型分目录
-LOG_DIR_TB="./runs/${MODEL_TYPE}_exp"
-SAVE_FREQ=5
+# 保存和日志参数（路径/频率完全同步目标值）
+SAVE_DIR="./save_models"  # 同步目标参数：根目录，不额外分模型子目录
+LOG_DIR_TB="./runs"  # 同步目标参数：./runs
+SAVE_FREQ=10  # 同步目标参数：10
+PRINT_PARAMS=True  # 新增：同步目标参数：打印参数
 
 # ======================== GPU配置 ========================
 # 指定GPU（单卡：0，多卡：0,1,2），注释则自动使用所有可用GPU
@@ -80,7 +84,7 @@ echo "日志保存路径: ${LOG_DIR}/${EXP_NAME}_${MODEL_TYPE}_$(date +%Y%m%d_%H
 echo "模型保存路径: ${SAVE_DIR}"
 echo "========================================"
 
-# 拼接完整训练命令（严格匹配parse_args的参数名）
+# 拼接完整训练命令（新增所有目标参数，严格匹配parse_args参数名）
 TRAIN_CMD="python ${TRAIN_SCRIPT} \
     --exp_name ${EXP_NAME} \
     --mode ${MODE} \
@@ -102,26 +106,31 @@ TRAIN_CMD="python ${TRAIN_SCRIPT} \
     --dropout ${DROPOUT} \
     --epochs ${EPOCHS} \
     --lr ${LR} \
+    --momentum ${MOMENTUM} \
+    --weight_decay ${WEIGHT_DECAY} \
+    --warmup_ratio ${WARMUP_RATIO} \
     --temperature ${TEMPERATURE} \
     --freq_keep_ratio ${FREQ_KEEP_RATIO} \
     --save_dir ${SAVE_DIR} \
     --log_dir ${LOG_DIR_TB} \
     --save_freq ${SAVE_FREQ} \
+    --print_params ${PRINT_PARAMS} \
     --device ${DEVICE} \
     --seed ${SEED}"
 
-# ======================== 新增：输出完整的TRAIN_CMD ========================
+# ======================== 输出完整的TRAIN_CMD ========================
 echo -e "\n【即将执行的训练命令】:"
 echo "=============================================================="
 echo ${TRAIN_CMD}  # 单行输出（便于复制执行）
 echo "=============================================================="
 
-# 执行训练并记录日志（终端+文件双输出）
-${TRAIN_CMD} 2>&1 | tee ${LOG_DIR}/${EXP_NAME}_${MODEL_TYPE}_$(date +%Y%m%d_%H%M%S).log
+# 执行训练并记录日志（终端+文件双输出，避免日志路径重复生成时间戳）
+LOG_FILE="${LOG_DIR}/${EXP_NAME}_${MODEL_TYPE}_$(date +%Y%m%d_%H%M%S).log"
+${TRAIN_CMD} 2>&1 | tee ${LOG_FILE}
 
 # ======================== 训练结束 ========================
 echo "========================================"
 echo "训练结束时间: $(date)"
-echo "日志文件: ${LOG_DIR}/${EXP_NAME}_${MODEL_TYPE}_$(date +%Y%m%d_%H%M%S).log"
+echo "日志文件: ${LOG_FILE}"
 echo "模型文件: ${SAVE_DIR}"
 echo "========================================"

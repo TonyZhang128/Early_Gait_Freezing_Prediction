@@ -103,6 +103,14 @@ class GSDNN_new(nn.Module):
         self.blocks.add_module("GlobalAvgPool", module)
 
         self.fc = nn.Linear(self.num_channels, num_classes)
+        
+        # 增加模型初始化
+        for m in self.modules():
+            if isinstance(m, (nn.Linear, nn.Conv1d)):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, (nn.BatchNorm1d, nn.GroupNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
         out = self.blocks(x)

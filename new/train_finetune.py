@@ -5,197 +5,25 @@
 
 import argparse
 import os
-import random
 from pathlib import Path
 from datetime import datetime
 
 import numpy as np
-import scipy.io as sio
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
-from sklearn.metrics import (confusion_matrix, f1_score, precision_score,
-                             recall_score, auc, roc_auc_score)
-from torch.utils.data import DataLoader, Dataset
+from sklearn.metrics import f1_score, precision_score,recall_score, auc, roc_auc_score
 from torch.utils.tensorboard import SummaryWriter
-from torchvision import transforms
 
+from datasets.Gait_dataset import create_dataloaders
 # 导入模型
 from models.DNN import DNN
 from models.GSDNN_new import GSDNN_new
 from models.resnet import ResNet18
-
-
-
-# ================================ 数据增强模块 ================================
-
-def reverse_time_series(data):
-    """时间序列反转"""
-    return -data
-
-
-def random_channel_shuffle(data):
-    """随机通道打乱"""
-    assert data.dim() == 3, "Input data must be 3D with channels as the second dimension"
-    num_channels = data.size(1)
-    shuffled_indices = torch.randperm(num_channels)
-    return data[:, shuffled_indices, :]
-
-
-def random_frequency_dropout(img, keep_ratio=0.6):
-    """随机频率成分丢弃"""
-    fft_img = torch.fft.fftn(img, dim=2)
-    magnitude = torch.abs(fft_img)
-    num_freqs = magnitude.shape[2]
-    keep_indices = np.random.choice(num_freqs, int(num_freqs * keep_ratio), replace=False)
-    mask = torch.zeros_like(magnitude, dtype=torch.bool)
-    mask[:, :, keep_indices] = 1
-    fft_img = fft_img * mask
-    img = torch.fft.ifftn(fft_img, dim=2)
-    return torch.real(img)
-
-
-def get_data_transforms(augmentation_prob=0.5, freq_keep_ratio=0.6):
-    """构建数据增强变换组合"""
-    return transforms.Compose([
-        transforms.RandomApply([
-            transforms.Lambda(lambda x: random_frequency_dropout(x, freq_keep_ratio)),
-            transforms.Lambda(reverse_time_series),
-        ], p=augmentation_prob)
-    ])
-
-
-# ================================ 数据集类 ================================
-
-class GaitDataset(Dataset):
-    """步态数据集类"""
-
-    def __init__(self, data_array, data_label, data_transform=None, views=2):
-        """
-        Args:
-            data_array: 数据数组
-            data_label: 标签数组
-            data_transform: 数据变换
-            views: 视角数量
-        """
-        self.transform = data_transform
-        self.data_array = data_array
-        self.data_label = data_label
-        self.views = views
-
-    def __len__(self):
-        return len(self.data_array)
-
-    def __getitem__(self, idx):
-        img = self.data_array[idx]
-        if self.transform:
-            img = self.transform(torch.tensor(np.expand_dims(img, axis=0)))
-        return img, self.data_label[idx]
-
-
-# ================================ 数据加载模块 ================================
-
-def load_and_split_data(data_path, train_ratio=0.8, random_seed=42):
-    """
-    加载并划分训练集和测试集
-
-    Args:
-        data_path: 数据文件路径（不含后缀）
-        train_ratio: 训练集比例
-        random_seed: 随机种子
-
-    Returns:
-        train_data, test_data, train_label, test_label
-    """
-    np.random.seed(random_seed)
-
-    # 加载数据
-    # data_finetue = sio.loadmat(f'{data_path}/sub_train_data.mat')['sub_train_data']
-    # labels_finetue = sio.loadmat(f'{data_path}/sub_train_label.mat')['sub_train_label'][0]
-    
-    # data_test = sio.loadmat(f'{data_path}/sub_test_data.mat')['sub_data']
-    # labels_test = sio.loadmat(f'{data_path}/sub_test_label.mat')['sub_label'][0]
-    
-    # train_data = data_finetue
-    # train_label = labels_finetue - 1
-    # test_data = data_test
-    # test_label = labels_test - 1
-    
-    data = sio.loadmat(f'{data_path}/sub_data.mat')['sub_data']
-    labels = sio.loadmat(f'{data_path}/sub_label.mat')['sub_label'][0]
-
-    # 打乱索引
-    random_index = np.array(range(len(data)))
-    np.random.shuffle(random_index)
-
-    # 应用打乱
-    data = data[random_index]
-    labels = labels[random_index]
-
-    # 划分数据集
-    train_len = int(len(data) * train_ratio)
-
-    train_data = data[:train_len]
-    test_data = data[train_len:]
-    train_label = labels[:train_len] - 1  # 标签从0开始
-    test_label = labels[train_len:] - 1
-
-    return train_data, test_data, train_label, test_label
-
-
-def create_dataloaders(args):
-    """
-    创建数据加载器
-
-    Args:
-        args: 参数对象
-
-    Returns:
-        train_loader, test_loader
-    """
-    # 加载数据
-    train_data, test_data, train_label, test_label = load_and_split_data(
-        args.data_path, args.train_ratio
-    )
-
-    # 创建数据增强
-    data_transforms = get_data_transforms(
-        args.augmentation_prob,
-        args.freq_keep_ratio
-    )
-
-    # 创建数据集
-    train_dataset = GaitDataset(
-        data_array=train_data,
-        data_label=train_label,
-        data_transform=data_transforms,
-        views=2
-    )
-
-    test_dataset = GaitDataset(
-        data_array=test_data,
-        data_label=test_label,
-        data_transform=data_transforms,
-        views=2
-    )
-
-    # 创建数据加载器
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.num_workers
-    )
-
-    test_loader = DataLoader(
-        test_dataset,
-        batch_size=args.batch_size,
-        shuffle=False,
-        num_workers=args.num_workers
-    )
-
-    return train_loader, test_loader
+from models.Conformer import Conformer
+from utils.analysis import set_seed
+from utils.calculate import FLOPs_calculat
+from utils.plt_curves import plot_confusion_matrix
 
 
 # ================================ 模型定义模块 ================================
@@ -225,7 +53,7 @@ class SimCLREncoder(nn.Module):
     def forward(self, x):
         h = self.encoder(x)
         h = self.dropout(h)
-        h = h.view(h.size(0), -1)
+        h = torch.flatten(h, start_dim=1)
         return h
 
 
@@ -260,47 +88,22 @@ class ClassificationModel(nn.Module):
 
 
 def get_model(model_type, args, num_classes=27, device='cpu'):
-    """
-    根据类型获取模型
+    """创建模型实例"""
+    if model_type == 'GSDNN':
+        base_model = GSDNN_new(args.num_classes, args.block_n, args.init_channels, 
+                            args.growth_rate, args.base_channels, args.stride, args.dropout_GSDNN)
+    elif model_type == 'ResNet':
+        base_model = ResNet18()
+    elif model_type == 'Conformer':
+        base_model = Conformer(emb_size=40, depth=6, n_classes=4)
+    else:
+        raise ValueError(f"不支持的模型类型: {model_type}")
 
-    Args:
-        model_type: 模型类型
-        num_classes: 分类数量
-        device: 设备
-
-    Returns:
-        model: 模型实例
-    """
-    model_dict = {
-        'DNN': DNN,
-        'GSDNN': GSDNN_new,
-        'ResNet': ResNet18
-    }
-
-    if model_type not in model_dict:
-        raise ValueError(f"Unsupported model type: {model_type}")
-
-    base_model = model_dict[model_type]()
     encoder = SimCLREncoder(base_model, args.out_dim, args.proj_out_dim, args.contrastive_dim, args.dropout)
     model = ClassificationModel(encoder, num_features=args.out_dim, num_classes=num_classes)
 
     return model.to(device)
 
-
-def init_weights(m):
-    """Xavier初始化"""
-    if isinstance(m, (nn.Conv2d, nn.Linear)):
-        nn.init.xavier_uniform_(m.weight)
-        if m.bias is not None:
-            m.bias.data.fill_(0.01)
-
-
-def init_weights_normal(m):
-    """正态分布初始化"""
-    if isinstance(m, (nn.Conv2d, nn.Linear)):
-        nn.init.normal_(m.weight, mean=0.0, std=0.01)
-        if m.bias is not None:
-            m.bias.data.fill_(0.01)
 
 
 # ================================ 训练和评估模块 ================================
@@ -327,7 +130,8 @@ def train_one_epoch(model, dataloader, optimizer, criterion, device, args):
         optimizer.zero_grad()
 
         # 数据预处理
-        x = torch.squeeze(x, dim=1)
+        if args.model_type == 'GSDNN':
+            x = torch.squeeze(x, dim=1)
         x = x.to(device=device, dtype=torch.float32)
         label = label.to(device=device)
 
@@ -409,85 +213,6 @@ def evaluate(model, dataloader, device):
     }
 
 
-# ================================ 可视化模块 ================================
-
-def plot_training_curves(losses, train_accs, test_accs, save_path=None):
-    """
-    绘制训练曲线
-
-    Args:
-        losses: 损失列表
-        train_accs: 训练准确率列表
-        test_accs: 测试准确率列表
-        save_path: 保存路径（可选）
-    """
-    plt.figure(figsize=(15, 5))
-
-    # 绘制损失曲线
-    plt.subplot(1, 3, 1)
-    plt.plot(losses, label='Training Loss')
-    plt.title('Training Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.grid(True)
-
-    # 绘制准确率曲线
-    plt.subplot(1, 3, 2)
-    plt.plot(train_accs, label='Training Accuracy')
-    plt.plot(test_accs, label='Testing Accuracy')
-    plt.title('Training and Testing Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    plt.grid(True)
-
-    plt.tight_layout()
-
-    if save_path:
-        plt.savefig(save_path)
-        print(f"Training curves saved to {save_path}")
-    else:
-        plt.show()
-
-
-def plot_confusion_matrix(y_labels, y_preds, save_path=None):
-    """
-    绘制混淆矩阵
-
-    Args:
-        y_labels: 真实标签
-        y_preds: 预测标签
-        save_path: 保存路径（可选）
-    """
-    conf_matrix = confusion_matrix(y_labels, y_preds)
-
-    plt.figure(figsize=(10, 8))
-    plt.imshow(conf_matrix, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.title('Confusion Matrix')
-    plt.colorbar()
-
-    num_classes = conf_matrix.shape[0]
-    tick_marks = np.arange(num_classes)
-    plt.xticks(tick_marks, tick_marks)
-    plt.yticks(tick_marks, tick_marks)
-
-    plt.xlabel('Predicted Label')
-    plt.ylabel('True Label')
-
-    thresh = conf_matrix.max() / 2.0
-    for i, j in np.ndindex(conf_matrix.shape):
-        plt.text(j, i, format(conf_matrix[i, j], 'd'),
-                horizontalalignment="center",
-                color="white" if conf_matrix[i, j] > thresh else "black")
-
-    plt.tight_layout()
-
-    if save_path:
-        plt.savefig(save_path)
-        print(f"Confusion matrix saved to {save_path}")
-    else:
-        plt.show()
 
 
 def log_metrics_to_tensorboard(writer, metrics, epoch, phase='train'):
@@ -502,6 +227,10 @@ def log_metrics_to_tensorboard(writer, metrics, epoch, phase='train'):
     """
     prefix = f'{phase}/'
 
+    # 仅训练集记录Loss
+    if phase == 'train' and 'loss' in metrics:
+        writer.add_scalar(f'{prefix}Loss', metrics['loss'], epoch)
+        
     writer.add_scalar(f'{prefix}Loss', metrics.get('loss', 0), epoch)
     writer.add_scalar(f'{prefix}Accuracy', metrics['accuracy'], epoch)
     writer.add_scalar(f'{prefix}Precision', metrics['precision'], epoch)
@@ -509,16 +238,6 @@ def log_metrics_to_tensorboard(writer, metrics, epoch, phase='train'):
     writer.add_scalar(f'{prefix}F1', metrics['f1'], epoch)
     writer.add_scalar(f'{prefix}AUC', metrics['auc'], epoch)
 
-def set_seed(seed):
-    """设置随机种子，确保实验可重复性"""
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
         
 # ================================ 主训练流程 ================================
 
@@ -534,15 +253,11 @@ def train(args):
     # 设置device
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     
-    # 创建必要的目录
-    Path(args.log_dir).mkdir(parents=True, exist_ok=True)
-    Path(args.save_dir).mkdir(parents=True, exist_ok=True)
-    
     # 创建数据加载器
     print("Creating dataloaders...")
     train_loader, test_loader = create_dataloaders(args)
-    print(f"Train batches: {len(train_loader)}, Total train data:{len(train_loader)*args.batch_size} \
-          Test batches: {len(test_loader)}, Total test data:{len(test_loader)*args.batch_size}")
+    print(f"Train batches: {len(train_loader)}, Total train data:{len(train_loader.dataset)} \
+          Test batches: {len(test_loader)}, Total test data:{len(test_loader.dataset)}")
 
     # 创建模型
     print(f"Creating model: {args.model_type}")
@@ -565,17 +280,33 @@ def train(args):
         for param in model.encoder.parameters():
             param.requires_grad = False
 
+        # 初始化分类头参数
+        print("Initializing classifier parameters...")
+        for m in model.classifier.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+                
+    # 计算模型参数量与FLOPS
+    data_shape = [1, 18, 101]
+    FLOPs_calculat(model, device, data_shape)
+    
     # 创建优化器和损失函数
     optimizer = torch.optim.Adam(
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=args.learning_rate
     )
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_step_size, 
+                                                gamma=args.lr_gamma)
+
+
     criterion = nn.CrossEntropyLoss()
 
     # 创建TensorBoard writer
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(args.log_dir, args.exp_name+timestamp)
-    save_dir = os.path.join(args.save_dir, args.exp_name)
+    log_dir = os.path.join(args.log_dir, args.exp_name + '_' + timestamp)
+    save_dir = os.path.join(args.save_dir, args.exp_name + '_' + timestamp)
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(save_dir, exist_ok=True)
     
@@ -642,12 +373,16 @@ def train(args):
               f'Train Acc: {train_metrics["accuracy"]:.5f}, '
               f'Test Acc: {test_metrics["accuracy"]:.5f}')
 
+        current_lr = optimizer.param_groups[0]['lr']
+        writer.add_scalar('train/LearningRate', current_lr, epoch)
+        scheduler.step()
+        
         # 保存最佳模型
         if test_metrics['accuracy'] > best_test_acc:
             best_test_acc = test_metrics['accuracy']
             best_model_path = os.path.join(
                 save_dir,
-                f'best_acc{test_metrics["accuracy"]:.5f}_model_{args.model_type}.pth'
+                f'best_model_{args.model_type}.pth'
             )
             torch.save(model.state_dict(), best_model_path)
             print(f'New best model saved with accuracy: {best_test_acc:.5f}')
@@ -677,11 +412,11 @@ def train(args):
     # )
 
     # # 绘制混淆矩阵
-    # plot_confusion_matrix(
-    #     test_metrics['labels'],
-    #     test_metrics['predictions'],
-    #     save_path=os.path.join(args.save_dir, 'confusion_matrix.png')
-    # )
+    plot_confusion_matrix(
+        test_metrics['labels'],
+        test_metrics['predictions'],
+        save_path=os.path.join(args.save_dir, 'confusion_matrix.png')
+    )
 
     return history, model
 
@@ -718,6 +453,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='步态识别分类训练')
     parser.add_argument('--exp_name', type=str, default='Gait_finetune_training')
     parser.add_argument('--mode', type=str, default='debug', help='normal, debug')
+    parser.add_argument('--print_params', type=bool, default=True, help='打印参数')
+
     # 数据相关
     parser.add_argument('--data_path', type=str, default='./datasets/data_10000/', help='数据文件路径')
     parser.add_argument('--train_ratio', type=float, default=0.7, help='训练集比例')
@@ -728,16 +465,26 @@ def parse_args():
     parser.add_argument('--num_epochs', type=int, default=20, help='训练轮数')
     parser.add_argument('--learning_rate', type=float, default=3e-4, help='学习率')
     parser.add_argument('--num_classes', type=int, default=27, help='分类数量')
+    parser.add_argument('--lr_step_size', type=int, default=10, help='StepLR学习率衰减步长')
+    parser.add_argument('--lr_gamma', type=float, default=0.5, help='StepLR学习率衰减系数')
 
     # 模型相关
     parser.add_argument('--model_type', type=str, default='GSDNN',
                        choices=['DNN', 'GSDNN', 'GSDNN2', 'GSDNN_new', 'MSDNN', 'ResNet101'],
                        help='模型类型')
     parser.add_argument('--pretrained_model', type=str,
-                       default='./save_models/GSDNN_exp/Gait_selfsup_GSDNN_baseline/best_model.pth',
+                       default='./save_models/Gait_self_supervised_training/best_model.pth',
                        help='预训练模型路径') # './save_model/best_modelGSDNNk3_27class_aug123.pth'
     parser.add_argument('--freeze_encoder', action='store_true', help='是否冻结编码器参数')
 
+    ## parameters for GSDNN
+    parser.add_argument('--block_n', type=int, default=8, help='模块堆叠次数')
+    parser.add_argument('--init_channels', type=int, default=18, help='数据输入维度')
+    parser.add_argument('--growth_rate', type=int, default=12, help='模块每叠一次，维度提升多少')
+    parser.add_argument('--base_channels', type=int, default=48, help='初始特征维度')
+    parser.add_argument('--stride', type=int, default=2, help='卷积步长')
+    parser.add_argument('--dropout_GSDNN', type=float, default=0.2, help='GSDNN丢失概率')
+    
     ## parameters for projection head
     ### GSDNN [132 128 256]
     ### ResNet18 [64 128 256]
@@ -760,52 +507,13 @@ def parse_args():
     args = parser.parse_args()
     
     # 打印所有配置信息
-    print("="*60)
-    print("📋 步态识别训练配置信息")
-    print("="*60)
-    
-    # 按类别分组打印，让输出更清晰
-    # 基础配置
-    print("\n[基础配置]")
-    print(f"  实验名称 (exp_name): {args.exp_name}")
-    print(f"  运行模式 (mode): {args.mode}")
-    print(f"  随机种子      (seed): {args.seed}")
-
-    # 数据相关
-    print("\n[数据相关]")
-    print(f"  数据路径 (data_path): {args.data_path}")
-    print(f"  训练集比例 (train_ratio): {args.train_ratio}")
-    print(f"  批次大小 (batch_size): {args.batch_size}")
-    print(f"  加载线程数    (num_workers): {args.num_workers}")
-    
-    # 训练相关
-    print("\n[训练相关]")
-    print(f"  训练轮数 (num_epochs): {args.num_epochs}")
-    print(f"  学习率 (learning_rate): {args.learning_rate}")
-    print(f"  分类数量 (num_classes): {args.num_classes}")
-    
-    # 模型相关
-    print("\n[模型相关]")
-    print(f"  模型类型 (model_type): {args.model_type}")
-    print(f"  预训练模型路径 (pretrained_model): {args.pretrained_model}")
-    print(f"  冻结编码器 (freeze_encoder): {args.freeze_encoder}")
-    print(f"  编码器输出维度 (out_dim): {args.out_dim}")
-    print(f"  投影头中间层维度 (proj_out_dim): {args.proj_out_dim}")
-    print(f"  对比学习特征维度 (contrastive_dim): {args.contrastive_dim}")
-    print(f"  Dropout概率 (dropout): {args.dropout}")
-    
-    # 数据增强相关
-    print("\n[数据增强相关]")
-    print(f"  数据增强概率 (augmentation_prob): {args.augmentation_prob}")
-    print(f"  频率成分保留比例 (freq_keep_ratio): {args.freq_keep_ratio}")
-    
-    # 设备和路径
-    print("\n[设备和路径]")
-    print(f"  设备 (device): {args.device}")
-    print(f"  TensorBoard日志目录 (log_dir): {args.log_dir}")
-    print(f"  模型保存目录 (save_dir): {args.save_dir}")
-    
-    print("\n" + "="*60)
+    if args.print_params:
+        print("="*70)
+        print("📊 步态识别分类训练配置信息")
+        print("="*70)
+        for key, value in sorted(vars(args).items()):
+            print(f"  {key.ljust(30)}: {value}")
+        print("="*70)
     
     return args
 
