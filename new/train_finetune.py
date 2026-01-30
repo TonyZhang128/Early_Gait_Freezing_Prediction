@@ -574,7 +574,7 @@ def train(args):
 
     # 创建TensorBoard writer
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(args.log_dir, args.exp_name)
+    log_dir = os.path.join(args.log_dir, args.exp_name+timestamp)
     save_dir = os.path.join(args.save_dir, args.exp_name)
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(save_dir, exist_ok=True)

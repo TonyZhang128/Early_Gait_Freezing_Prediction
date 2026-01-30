@@ -1,0 +1,180 @@
+======================================================================
+📊 步态识别对比学习训练配置信息
+======================================================================
+
+[基础配置]
+  实验名称      (exp_name): Gait_selfsup_GSDNN_baseline
+  运行模式      (mode): normal
+  随机种子      (seed): 42
+
+[数据参数]
+  数据路径      (data_path): datasets/data_10000/all_data.mat
+  批次大小      (batch_size): 64
+  加载线程数    (num_workers): 4
+  对比视图数    (views): 2
+
+[模型参数]
+  模型类型      (model_type): GSDNN
+  输出类别数    (num_classes): 1
+  GSDNN模块堆叠次数 (block_n): 8
+  数据输入维度  (init_channels): 18
+  维度增长速率  (growth_rate): 12
+  初始特征维度  (base_channels): 48
+  卷积步长      (stride): 2
+  GSDNN dropout (dropout_GSDNN): 0.2
+  编码器输出维度 (out_dim): 132
+  投影头中间维度 (proj_out_dim): 128
+  对比学习维度  (contrastive_dim): 256
+  Dropout概率   (dropout): 0.5
+
+[训练参数]
+  训练轮数      (epochs): 200
+  学习率        (lr): 0.0003
+  温度参数      (temperature): 0.5
+
+[数据增强参数]
+  频率保留比例  (freq_keep_ratio): 0.6
+
+[保存和日志参数]
+  模型保存目录  (save_dir): ./save_models/GSDNN_exp
+  日志目录      (log_dir): ./runs/GSDNN_exp
+  保存频率      (save_freq): 5
+
+[设备参数]
+  训练设备      (device): cuda
+  GPU数量       : 1
+  当前GPU       : NVIDIA GeForce RTX 4090
+
+======================================================================
+Using device: cuda
+TensorBoard logs will be saved to: ./runs/GSDNN_exp/Gait_selfsup_GSDNN_baseline
+Models will be saved to: ./save_models/GSDNN_exp/Gait_selfsup_GSDNN_baseline
+Loading data...
+Data loaded. Total batches: 1163. Total train data: 74432
+Creating model...
+Starting training...
+Epoch 1/200, Average Loss: 3.957405
+Epoch 1, New minimum loss: 3.957405, Best model saved.
+Epoch 2/200, Average Loss: 3.795625
+Epoch 2, New minimum loss: 3.795625, Best model saved.
+Epoch 3/200, Average Loss: 3.636986
+Epoch 3, New minimum loss: 3.636986, Best model saved.
+Epoch 4/200, Average Loss: 3.530612
+Epoch 4, New minimum loss: 3.530612, Best model saved.
+Epoch 5/200, Average Loss: 3.434150
+Epoch 5, New minimum loss: 3.434150, Best model saved.
+Epoch 6/200, Average Loss: 3.363256
+Epoch 6, New minimum loss: 3.363256, Best model saved.
+Epoch 7/200, Average Loss: 3.302462
+Epoch 7, New minimum loss: 3.302462, Best model saved.
+Epoch 8/200, Average Loss: 3.255404
+Epoch 8, New minimum loss: 3.255404, Best model saved.
+Epoch 9/200, Average Loss: 3.208766
+Epoch 9, New minimum loss: 3.208766, Best model saved.
+Epoch 10/200, Average Loss: 3.192906
+Epoch 10, New minimum loss: 3.192906, Best model saved.
+Epoch 11/200, Average Loss: 3.166536
+Epoch 11, New minimum loss: 3.166536, Best model saved.
+Epoch 12/200, Average Loss: 3.148081
+Epoch 12, New minimum loss: 3.148081, Best model saved.
+Epoch 13/200, Average Loss: 3.125575
+Epoch 13, New minimum loss: 3.125575, Best model saved.
+Epoch 14/200, Average Loss: 3.117696
+Epoch 14, New minimum loss: 3.117696, Best model saved.
+Epoch 15/200, Average Loss: 3.101107
+Epoch 15, New minimum loss: 3.101107, Best model saved.
+Epoch 16/200, Average Loss: 3.099316
+Epoch 16, New minimum loss: 3.099316, Best model saved.
+Epoch 17/200, Average Loss: 3.099802
+Epoch 18/200, Average Loss: 3.096051
+Epoch 18, New minimum loss: 3.096051, Best model saved.
+Epoch 19/200, Average Loss: 3.071914
+Epoch 19, New minimum loss: 3.071914, Best model saved.
+Epoch 20/200, Average Loss: 3.066838
+Epoch 20, New minimum loss: 3.066838, Best model saved.
+Epoch 21/200, Average Loss: 3.062936
+Epoch 21, New minimum loss: 3.062936, Best model saved.
+Epoch 22/200, Average Loss: 3.053354
+Epoch 22, New minimum loss: 3.053354, Best model saved.
+Epoch 23/200, Average Loss: 3.052515
+Epoch 23, New minimum loss: 3.052515, Best model saved.
+Epoch 24/200, Average Loss: 3.050681
+Epoch 24, New minimum loss: 3.050681, Best model saved.
+Epoch 25/200, Average Loss: 3.046361
+Epoch 25, New minimum loss: 3.046361, Best model saved.
+Epoch 26/200, Average Loss: 3.041187
+Epoch 26, New minimum loss: 3.041187, Best model saved.
+Epoch 27/200, Average Loss: 3.036302
+Epoch 27, New minimum loss: 3.036302, Best model saved.
+Epoch 28/200, Average Loss: 3.029005
+Epoch 28, New minimum loss: 3.029005, Best model saved.
+Epoch 29/200, Average Loss: 3.026059
+Epoch 29, New minimum loss: 3.026059, Best model saved.
+Epoch 30/200, Average Loss: 3.020757
+Epoch 30, New minimum loss: 3.020757, Best model saved.
+Epoch 31/200, Average Loss: 3.016124
+Epoch 31, New minimum loss: 3.016124, Best model saved.
+Epoch 32/200, Average Loss: 3.016064
+Epoch 32, New minimum loss: 3.016064, Best model saved.
+Epoch 33/200, Average Loss: 3.010975
+Epoch 33, New minimum loss: 3.010975, Best model saved.
+Epoch 34/200, Average Loss: 3.007985
+Epoch 34, New minimum loss: 3.007985, Best model saved.
+Epoch 35/200, Average Loss: 3.003512
+Epoch 35, New minimum loss: 3.003512, Best model saved.
+Epoch 36/200, Average Loss: 3.001335
+Epoch 36, New minimum loss: 3.001335, Best model saved.
+Epoch 37/200, Average Loss: 2.997971
+Epoch 37, New minimum loss: 2.997971, Best model saved.
+Epoch 38/200, Average Loss: 2.997118
+Epoch 38, New minimum loss: 2.997118, Best model saved.
+Epoch 39/200, Average Loss: 2.992370
+Epoch 39, New minimum loss: 2.992370, Best model saved.
+Epoch 40/200, Average Loss: 2.991727
+Epoch 40, New minimum loss: 2.991727, Best model saved.
+Epoch 41/200, Average Loss: 2.986068
+Epoch 41, New minimum loss: 2.986068, Best model saved.
+Epoch 42/200, Average Loss: 2.980516
+Epoch 42, New minimum loss: 2.980516, Best model saved.
+Epoch 43/200, Average Loss: 2.981162
+Epoch 44/200, Average Loss: 2.978701
+Epoch 44, New minimum loss: 2.978701, Best model saved.
+Epoch 45/200, Average Loss: 2.975623
+Epoch 45, New minimum loss: 2.975623, Best model saved.
+Epoch 46/200, Average Loss: 2.969955
+Epoch 46, New minimum loss: 2.969955, Best model saved.
+Epoch 47/200, Average Loss: 2.964754
+Epoch 47, New minimum loss: 2.964754, Best model saved.
+Epoch 48/200, Average Loss: 2.968314
+Epoch 49/200, Average Loss: 2.967103
+Epoch 50/200, Average Loss: 2.960373
+Epoch 50, New minimum loss: 2.960373, Best model saved.
+Epoch 51/200, Average Loss: 2.958690
+Epoch 51, New minimum loss: 2.958690, Best model saved.
+Epoch 52/200, Average Loss: 2.960475
+Epoch 53/200, Average Loss: 2.955416
+Epoch 53, New minimum loss: 2.955416, Best model saved.
+Epoch 54/200, Average Loss: 2.952963
+Epoch 54, New minimum loss: 2.952963, Best model saved.
+Epoch 55/200, Average Loss: 2.952894
+Epoch 55, New minimum loss: 2.952894, Best model saved.
+Epoch 56/200, Average Loss: 2.948909
+Epoch 56, New minimum loss: 2.948909, Best model saved.
+Epoch 57/200, Average Loss: 2.948143
+Epoch 57, New minimum loss: 2.948143, Best model saved.
+Epoch 58/200, Average Loss: 2.944203
+Epoch 58, New minimum loss: 2.944203, Best model saved.
+Epoch 59/200, Average Loss: 2.941508
+Epoch 59, New minimum loss: 2.941508, Best model saved.
+Epoch 60/200, Average Loss: 2.941687
+Epoch 61/200, Average Loss: 2.939624
+Epoch 61, New minimum loss: 2.939624, Best model saved.
+Epoch 62/200, Average Loss: 2.941876
+Epoch 63/200, Average Loss: 2.936564
+Epoch 63, New minimum loss: 2.936564, Best model saved.
+Epoch 64/200, Average Loss: 2.937524
+Epoch 65/200, Average Loss: 2.931095
+Epoch 65, New minimum loss: 2.931095, Best model saved.
+Epoch 66/200, Average Loss: 2.932193
+Epoch 67/200, Average Loss: 2.930479
+Epoch 67, New minimum loss: 2.930479, Best model saved.

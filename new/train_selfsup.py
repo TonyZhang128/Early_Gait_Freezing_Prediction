@@ -449,7 +449,8 @@ def train(args):
         args.exp_name = datetime.now().strftime('%Y%m%d_%H%M%S')
     # else:
     #     args.exp_name = args.exp_name + datetime.now().strftime('%Y%m%d_%H%M%S')
-    log_dir = os.path.join(args.log_dir, args.exp_name)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_dir = os.path.join(args.log_dir, args.exp_name+timestamp)
     save_dir = os.path.join(args.save_dir, args.exp_name)
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(save_dir, exist_ok=True)

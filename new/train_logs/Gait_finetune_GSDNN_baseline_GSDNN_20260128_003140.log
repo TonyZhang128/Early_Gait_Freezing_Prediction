@@ -1,0 +1,279 @@
+============================================================
+📋 步态识别训练配置信息
+============================================================
+
+[基础配置]
+  实验名称 (exp_name): Gait_finetune_GSDNN_baseline
+  运行模式 (mode): normal
+  随机种子      (seed): 42
+
+[数据相关]
+  数据路径 (data_path): ./datasets/data_10000/
+  训练集比例 (train_ratio): 0.7
+  批次大小 (batch_size): 64
+  加载线程数    (num_workers): 4
+
+[训练相关]
+  训练轮数 (num_epochs): 150
+  学习率 (learning_rate): 0.0003
+  分类数量 (num_classes): 27
+
+[模型相关]
+  模型类型 (model_type): GSDNN
+  预训练模型路径 (pretrained_model): ./save_models/GSDNN_exp/Gait_selfsup_GSDNN_baseline/best_model.pth
+  冻结编码器 (freeze_encoder): False
+  编码器输出维度 (out_dim): 132
+  投影头中间层维度 (proj_out_dim): 128
+  对比学习特征维度 (contrastive_dim): 256
+  Dropout概率 (dropout): 0.5
+
+[数据增强相关]
+  数据增强概率 (augmentation_prob): 0.5
+  频率成分保留比例 (freq_keep_ratio): 0.6
+
+[设备和路径]
+  设备 (device): cuda
+  TensorBoard日志目录 (log_dir): ./runs/GSDNN_exp
+  模型保存目录 (save_dir): ./save_models/GSDNN_exp
+
+============================================================
+Creating dataloaders...
+Train batches: 112, Total train data:7168           Test batches: 48, Total test data:3072
+Creating model: GSDNN
+Loading pretrained model from ./save_models/GSDNN_exp/Gait_selfsup_GSDNN_baseline/best_model.pth
+TensorBoard logs will be saved to ./runs/GSDNN_exp/Gait_finetune_GSDNN_baseline
+Models will be saved to: ./save_models/GSDNN_exp/Gait_finetune_GSDNN_baseline
+
+Starting training for 150 epochs...
+Epoch [1/150], Loss: 3.25887, Train Acc: 0.12714, Test Acc: 0.11980
+New best model saved with accuracy: 0.11980
+Epoch [2/150], Loss: 3.08190, Train Acc: 0.15142, Test Acc: 0.14272
+New best model saved with accuracy: 0.14272
+Epoch [3/150], Loss: 2.95924, Train Acc: 0.18411, Test Acc: 0.16596
+New best model saved with accuracy: 0.16596
+Epoch [4/150], Loss: 2.87285, Train Acc: 0.19941, Test Acc: 0.18625
+New best model saved with accuracy: 0.18625
+Epoch [5/150], Loss: 2.80649, Train Acc: 0.22804, Test Acc: 0.21473
+New best model saved with accuracy: 0.21473
+Epoch [6/150], Loss: 2.73388, Train Acc: 0.25709, Test Acc: 0.22782
+New best model saved with accuracy: 0.22782
+Epoch [7/150], Loss: 2.67592, Train Acc: 0.25765, Test Acc: 0.21964
+Epoch [8/150], Loss: 2.61067, Train Acc: 0.29568, Test Acc: 0.26416
+New best model saved with accuracy: 0.26416
+Epoch [9/150], Loss: 2.57246, Train Acc: 0.29259, Test Acc: 0.26481
+New best model saved with accuracy: 0.26481
+Epoch [10/150], Loss: 2.51108, Train Acc: 0.34171, Test Acc: 0.29591
+New best model saved with accuracy: 0.29591
+Epoch [11/150], Loss: 2.45801, Train Acc: 0.34592, Test Acc: 0.31031
+New best model saved with accuracy: 0.31031
+Epoch [12/150], Loss: 2.41964, Train Acc: 0.36444, Test Acc: 0.31457
+New best model saved with accuracy: 0.31457
+Epoch [13/150], Loss: 2.35560, Train Acc: 0.38086, Test Acc: 0.32668
+New best model saved with accuracy: 0.32668
+Epoch [14/150], Loss: 2.32009, Train Acc: 0.40065, Test Acc: 0.34206
+New best model saved with accuracy: 0.34206
+Epoch [15/150], Loss: 2.27130, Train Acc: 0.41229, Test Acc: 0.36498
+New best model saved with accuracy: 0.36498
+Epoch [16/150], Loss: 2.22388, Train Acc: 0.42562, Test Acc: 0.36236
+Epoch [17/150], Loss: 2.18567, Train Acc: 0.45566, Test Acc: 0.40164
+New best model saved with accuracy: 0.40164
+Epoch [18/150], Loss: 2.14410, Train Acc: 0.45145, Test Acc: 0.40262
+New best model saved with accuracy: 0.40262
+Epoch [19/150], Loss: 2.09750, Train Acc: 0.45692, Test Acc: 0.40524
+New best model saved with accuracy: 0.40524
+Epoch [20/150], Loss: 2.07401, Train Acc: 0.48204, Test Acc: 0.42357
+New best model saved with accuracy: 0.42357
+Epoch [21/150], Loss: 2.03805, Train Acc: 0.50000, Test Acc: 0.42520
+New best model saved with accuracy: 0.42520
+Epoch [22/150], Loss: 1.99748, Train Acc: 0.50042, Test Acc: 0.43306
+New best model saved with accuracy: 0.43306
+Epoch [23/150], Loss: 1.94798, Train Acc: 0.52372, Test Acc: 0.44354
+New best model saved with accuracy: 0.44354
+Epoch [24/150], Loss: 1.92083, Train Acc: 0.52372, Test Acc: 0.46088
+New best model saved with accuracy: 0.46088
+Epoch [25/150], Loss: 1.91081, Train Acc: 0.52919, Test Acc: 0.44877
+Epoch [26/150], Loss: 1.86001, Train Acc: 0.54364, Test Acc: 0.46481
+New best model saved with accuracy: 0.46481
+Epoch [27/150], Loss: 1.83616, Train Acc: 0.54519, Test Acc: 0.47594
+New best model saved with accuracy: 0.47594
+Epoch [28/150], Loss: 1.81156, Train Acc: 0.55992, Test Acc: 0.47201
+Epoch [29/150], Loss: 1.79342, Train Acc: 0.58097, Test Acc: 0.49689
+New best model saved with accuracy: 0.49689
+Epoch [30/150], Loss: 1.78581, Train Acc: 0.57830, Test Acc: 0.49787
+New best model saved with accuracy: 0.49787
+Epoch [31/150], Loss: 1.73226, Train Acc: 0.59753, Test Acc: 0.50245
+New best model saved with accuracy: 0.50245
+Epoch [32/150], Loss: 1.69982, Train Acc: 0.59304, Test Acc: 0.51424
+New best model saved with accuracy: 0.51424
+Epoch [33/150], Loss: 1.66821, Train Acc: 0.62097, Test Acc: 0.51227
+Epoch [34/150], Loss: 1.62783, Train Acc: 0.61984, Test Acc: 0.51620
+New best model saved with accuracy: 0.51620
+Epoch [35/150], Loss: 1.62100, Train Acc: 0.63360, Test Acc: 0.53552
+New best model saved with accuracy: 0.53552
+Epoch [36/150], Loss: 1.61818, Train Acc: 0.62953, Test Acc: 0.54108
+New best model saved with accuracy: 0.54108
+Epoch [37/150], Loss: 1.58028, Train Acc: 0.63430, Test Acc: 0.53879
+Epoch [38/150], Loss: 1.57720, Train Acc: 0.64637, Test Acc: 0.55221
+New best model saved with accuracy: 0.55221
+Epoch [39/150], Loss: 1.52838, Train Acc: 0.65493, Test Acc: 0.56367
+New best model saved with accuracy: 0.56367
+Epoch [40/150], Loss: 1.52994, Train Acc: 0.65689, Test Acc: 0.57938
+New best model saved with accuracy: 0.57938
+Epoch [41/150], Loss: 1.49609, Train Acc: 0.67513, Test Acc: 0.57643
+Epoch [42/150], Loss: 1.49760, Train Acc: 0.67064, Test Acc: 0.57119
+Epoch [43/150], Loss: 1.47930, Train Acc: 0.66461, Test Acc: 0.57021
+Epoch [44/150], Loss: 1.46878, Train Acc: 0.68440, Test Acc: 0.56956
+Epoch [45/150], Loss: 1.42285, Train Acc: 0.69674, Test Acc: 0.57545
+Epoch [46/150], Loss: 1.43880, Train Acc: 0.69099, Test Acc: 0.57480
+Epoch [47/150], Loss: 1.41642, Train Acc: 0.70025, Test Acc: 0.60687
+New best model saved with accuracy: 0.60687
+Epoch [48/150], Loss: 1.39438, Train Acc: 0.70839, Test Acc: 0.58625
+Epoch [49/150], Loss: 1.39339, Train Acc: 0.70755, Test Acc: 0.58560
+Epoch [50/150], Loss: 1.36932, Train Acc: 0.70601, Test Acc: 0.60458
+Epoch [51/150], Loss: 1.33663, Train Acc: 0.72074, Test Acc: 0.60720
+New best model saved with accuracy: 0.60720
+Epoch [52/150], Loss: 1.31212, Train Acc: 0.70951, Test Acc: 0.60229
+Epoch [53/150], Loss: 1.33918, Train Acc: 0.73155, Test Acc: 0.61309
+New best model saved with accuracy: 0.61309
+Epoch [54/150], Loss: 1.28517, Train Acc: 0.72102, Test Acc: 0.61800
+New best model saved with accuracy: 0.61800
+Epoch [55/150], Loss: 1.28476, Train Acc: 0.72341, Test Acc: 0.62095
+New best model saved with accuracy: 0.62095
+Epoch [56/150], Loss: 1.29387, Train Acc: 0.73534, Test Acc: 0.62160
+New best model saved with accuracy: 0.62160
+Epoch [57/150], Loss: 1.26852, Train Acc: 0.73604, Test Acc: 0.62062
+Epoch [58/150], Loss: 1.25686, Train Acc: 0.73940, Test Acc: 0.62586
+New best model saved with accuracy: 0.62586
+Epoch [59/150], Loss: 1.23370, Train Acc: 0.74404, Test Acc: 0.63633
+New best model saved with accuracy: 0.63633
+Epoch [60/150], Loss: 1.22031, Train Acc: 0.75498, Test Acc: 0.64059
+New best model saved with accuracy: 0.64059
+Epoch [61/150], Loss: 1.21230, Train Acc: 0.75161, Test Acc: 0.64484
+New best model saved with accuracy: 0.64484
+Epoch [62/150], Loss: 1.19216, Train Acc: 0.74404, Test Acc: 0.62782
+Epoch [63/150], Loss: 1.19530, Train Acc: 0.75975, Test Acc: 0.65205
+New best model saved with accuracy: 0.65205
+Epoch [64/150], Loss: 1.20157, Train Acc: 0.76817, Test Acc: 0.65859
+New best model saved with accuracy: 0.65859
+Epoch [65/150], Loss: 1.17589, Train Acc: 0.76747, Test Acc: 0.64615
+Epoch [66/150], Loss: 1.16860, Train Acc: 0.76214, Test Acc: 0.63437
+Epoch [67/150], Loss: 1.16689, Train Acc: 0.76845, Test Acc: 0.65368
+Epoch [68/150], Loss: 1.14416, Train Acc: 0.76298, Test Acc: 0.64452
+Epoch [69/150], Loss: 1.15639, Train Acc: 0.77126, Test Acc: 0.65008
+Epoch [70/150], Loss: 1.11753, Train Acc: 0.77729, Test Acc: 0.65925
+New best model saved with accuracy: 0.65925
+Epoch [71/150], Loss: 1.11304, Train Acc: 0.78024, Test Acc: 0.65434
+Epoch [72/150], Loss: 1.10955, Train Acc: 0.78768, Test Acc: 0.66318
+New best model saved with accuracy: 0.66318
+Epoch [73/150], Loss: 1.06741, Train Acc: 0.78431, Test Acc: 0.65990
+Epoch [74/150], Loss: 1.07822, Train Acc: 0.77940, Test Acc: 0.65859
+Epoch [75/150], Loss: 1.08530, Train Acc: 0.79189, Test Acc: 0.66579
+New best model saved with accuracy: 0.66579
+Epoch [76/150], Loss: 1.07391, Train Acc: 0.79820, Test Acc: 0.67987
+New best model saved with accuracy: 0.67987
+Epoch [77/150], Loss: 1.05326, Train Acc: 0.79652, Test Acc: 0.68347
+New best model saved with accuracy: 0.68347
+Epoch [78/150], Loss: 1.04321, Train Acc: 0.80368, Test Acc: 0.67954
+Epoch [79/150], Loss: 1.05054, Train Acc: 0.80676, Test Acc: 0.67594
+Epoch [80/150], Loss: 1.04087, Train Acc: 0.80676, Test Acc: 0.68478
+New best model saved with accuracy: 0.68478
+Epoch [81/150], Loss: 1.00534, Train Acc: 0.81266, Test Acc: 0.70147
+New best model saved with accuracy: 0.70147
+Epoch [82/150], Loss: 1.01268, Train Acc: 0.80031, Test Acc: 0.68216
+Epoch [83/150], Loss: 1.03868, Train Acc: 0.81196, Test Acc: 0.69787
+Epoch [84/150], Loss: 0.99819, Train Acc: 0.81546, Test Acc: 0.70606
+New best model saved with accuracy: 0.70606
+Epoch [85/150], Loss: 1.00085, Train Acc: 0.80466, Test Acc: 0.69427
+Epoch [86/150], Loss: 0.99743, Train Acc: 0.81546, Test Acc: 0.69264
+Epoch [87/150], Loss: 1.00002, Train Acc: 0.81476, Test Acc: 0.67889
+Epoch [88/150], Loss: 1.00172, Train Acc: 0.81771, Test Acc: 0.70671
+New best model saved with accuracy: 0.70671
+Epoch [89/150], Loss: 0.98311, Train Acc: 0.81224, Test Acc: 0.68773
+Epoch [90/150], Loss: 0.97100, Train Acc: 0.81406, Test Acc: 0.68740
+Epoch [91/150], Loss: 0.93452, Train Acc: 0.82950, Test Acc: 0.71686
+New best model saved with accuracy: 0.71686
+Epoch [92/150], Loss: 0.95045, Train Acc: 0.82108, Test Acc: 0.69689
+Epoch [93/150], Loss: 0.95696, Train Acc: 0.83146, Test Acc: 0.69689
+Epoch [94/150], Loss: 0.94272, Train Acc: 0.83399, Test Acc: 0.71588
+Epoch [95/150], Loss: 0.91566, Train Acc: 0.82192, Test Acc: 0.71555
+Epoch [96/150], Loss: 0.93808, Train Acc: 0.82276, Test Acc: 0.70344
+Epoch [97/150], Loss: 0.92281, Train Acc: 0.83020, Test Acc: 0.71620
+Epoch [98/150], Loss: 0.89141, Train Acc: 0.83904, Test Acc: 0.71817
+New best model saved with accuracy: 0.71817
+Epoch [99/150], Loss: 0.93010, Train Acc: 0.84002, Test Acc: 0.72242
+New best model saved with accuracy: 0.72242
+Epoch [100/150], Loss: 0.89592, Train Acc: 0.83174, Test Acc: 0.71784
+Epoch [101/150], Loss: 0.87409, Train Acc: 0.84115, Test Acc: 0.73781
+New best model saved with accuracy: 0.73781
+Epoch [102/150], Loss: 0.87213, Train Acc: 0.84381, Test Acc: 0.72308
+Epoch [103/150], Loss: 0.85365, Train Acc: 0.84044, Test Acc: 0.72177
+Epoch [104/150], Loss: 0.89122, Train Acc: 0.85041, Test Acc: 0.72635
+Epoch [105/150], Loss: 0.88539, Train Acc: 0.85027, Test Acc: 0.73355
+Epoch [106/150], Loss: 0.84175, Train Acc: 0.84662, Test Acc: 0.72373
+Epoch [107/150], Loss: 0.83735, Train Acc: 0.85321, Test Acc: 0.74043
+New best model saved with accuracy: 0.74043
+Epoch [108/150], Loss: 0.85645, Train Acc: 0.84227, Test Acc: 0.73257
+Epoch [109/150], Loss: 0.86169, Train Acc: 0.84521, Test Acc: 0.72242
+Epoch [110/150], Loss: 0.82873, Train Acc: 0.85546, Test Acc: 0.73355
+Epoch [111/150], Loss: 0.81679, Train Acc: 0.85363, Test Acc: 0.73028
+Epoch [112/150], Loss: 0.79572, Train Acc: 0.85756, Test Acc: 0.72111
+Epoch [113/150], Loss: 0.81475, Train Acc: 0.85293, Test Acc: 0.72700
+Epoch [114/150], Loss: 0.83924, Train Acc: 0.85813, Test Acc: 0.74697
+New best model saved with accuracy: 0.74697
+Epoch [115/150], Loss: 0.80078, Train Acc: 0.85841, Test Acc: 0.73519
+Epoch [116/150], Loss: 0.83398, Train Acc: 0.85869, Test Acc: 0.75941
+New best model saved with accuracy: 0.75941
+Epoch [117/150], Loss: 0.84531, Train Acc: 0.84550, Test Acc: 0.72177
+Epoch [118/150], Loss: 0.79086, Train Acc: 0.86360, Test Acc: 0.74664
+Epoch [119/150], Loss: 0.77713, Train Acc: 0.85055, Test Acc: 0.74861
+Epoch [120/150], Loss: 0.76701, Train Acc: 0.86332, Test Acc: 0.73453
+Epoch [121/150], Loss: 0.78538, Train Acc: 0.85869, Test Acc: 0.75221
+Epoch [122/150], Loss: 0.78142, Train Acc: 0.86556, Test Acc: 0.74108
+Epoch [123/150], Loss: 0.77732, Train Acc: 0.87075, Test Acc: 0.75450
+Epoch [124/150], Loss: 0.79246, Train Acc: 0.85139, Test Acc: 0.75254
+Epoch [125/150], Loss: 0.76005, Train Acc: 0.87146, Test Acc: 0.74795
+Epoch [126/150], Loss: 0.77899, Train Acc: 0.87974, Test Acc: 0.75286
+Epoch [127/150], Loss: 0.74858, Train Acc: 0.87356, Test Acc: 0.75810
+Epoch [128/150], Loss: 0.77374, Train Acc: 0.87258, Test Acc: 0.75090
+Epoch [129/150], Loss: 0.74684, Train Acc: 0.87047, Test Acc: 0.75254
+Epoch [130/150], Loss: 0.74283, Train Acc: 0.87258, Test Acc: 0.75876
+Epoch [131/150], Loss: 0.73860, Train Acc: 0.87075, Test Acc: 0.74010
+Epoch [132/150], Loss: 0.76205, Train Acc: 0.87721, Test Acc: 0.76039
+New best model saved with accuracy: 0.76039
+Epoch [133/150], Loss: 0.73727, Train Acc: 0.87749, Test Acc: 0.75843
+Epoch [134/150], Loss: 0.70587, Train Acc: 0.88493, Test Acc: 0.77414
+New best model saved with accuracy: 0.77414
+Epoch [135/150], Loss: 0.73076, Train Acc: 0.88886, Test Acc: 0.76137
+Epoch [136/150], Loss: 0.72384, Train Acc: 0.87875, Test Acc: 0.76825
+Epoch [137/150], Loss: 0.71538, Train Acc: 0.89096, Test Acc: 0.76072
+Epoch [138/150], Loss: 0.70116, Train Acc: 0.87861, Test Acc: 0.76956
+Epoch [139/150], Loss: 0.72893, Train Acc: 0.87482, Test Acc: 0.76530
+Epoch [140/150], Loss: 0.71806, Train Acc: 0.87272, Test Acc: 0.76661
+Epoch [141/150], Loss: 0.71580, Train Acc: 0.88844, Test Acc: 0.77480
+New best model saved with accuracy: 0.77480
+Epoch [142/150], Loss: 0.69158, Train Acc: 0.88563, Test Acc: 0.77087
+Epoch [143/150], Loss: 0.69773, Train Acc: 0.88984, Test Acc: 0.77119
+Epoch [144/150], Loss: 0.69999, Train Acc: 0.88661, Test Acc: 0.76858
+Epoch [145/150], Loss: 0.68600, Train Acc: 0.88451, Test Acc: 0.77185
+Epoch [146/150], Loss: 0.70804, Train Acc: 0.89110, Test Acc: 0.76694
+Epoch [147/150], Loss: 0.66907, Train Acc: 0.89068, Test Acc: 0.76367
+Epoch [148/150], Loss: 0.68161, Train Acc: 0.88774, Test Acc: 0.76498
+Epoch [149/150], Loss: 0.68383, Train Acc: 0.89194, Test Acc: 0.77480
+Epoch [150/150], Loss: 0.69172, Train Acc: 0.88647, Test Acc: 0.76890
+Final model saved to ./save_models/GSDNN_exp/Gait_finetune_GSDNN_baseline/final_acc_model_GSDNN.pth
+
+============================================================
+Average metrics of last 20 epochs:
+============================================================
+Accuracy:  0.76607
+Precision: 0.74471
+Recall:    0.70818
+F1:        0.71900
+AUC:       0.97976
+============================================================
+
+All results saved to: ./save_models/GSDNN_exp/Gait_finetune_GSDNN_baseline
+View TensorBoard logs with: tensorboard --logdir=./runs/GSDNN_exp/Gait_finetune_GSDNN_baseline
+
+Training completed!
+Best test accuracy: 0.77480
