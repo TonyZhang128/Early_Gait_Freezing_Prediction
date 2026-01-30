@@ -1,71 +1,105 @@
 #!/bin/bash
-# 步态识别对比学习训练脚本（适配GSDNN/ResNet/EEGNet/Conformer）
-# 支持多模型类型、GSDNN专属参数配置、日志记录、GPU选择
+# 步态识别合并训练脚本：先执行对比学习训练 → 再执行微调分类训练
+# 适配GSDNN/ResNet101/MSDNN等多模型，保留双日志输出、GPU选择、虚拟环境激活
 
 set -e  # 遇到错误立即退出，保证训练稳定性
 
-# ======================== 基础环境配置 ========================
-# 替换为你的Python虚拟环境激活路径（无需则注释）
+# ======================== 全局基础配置 ========================
+# 虚拟环境激活路径（两个任务共用）
 VENV_PATH="/root/miniconda3/envs/d2_cuda118/bin/activate"
-# 训练主脚本名称（如train.py/main.py，需替换为你的实际脚本名）
-TRAIN_SCRIPT="train_selfsup.py"
-# 日志目录（自动创建，避免手动操作）
-LOG_DIR="./train_logs"
-mkdir -p ${LOG_DIR}
-
-# ======================== 核心训练参数配置（已按目标完全修改） ========================
+# 日志根目录（自动创建）
+LOG_ROOT_DIR="./train_logs"
+mkdir -p ${LOG_ROOT_DIR}
+# GPU配置（两个任务共用）
+export CUDA_VISIBLE_DEVICES="0"
+MODE="debug" # "debug" or "normal"
+# ======================== 【任务1：对比学习训练】参数配置 ========================
 # 基础配置
-EXP_NAME="Gait_selfsup_GSDNN_baseline"
-MODE="debug"  # 同步目标参数：debug模式
-SEED=42
-DEVICE="cuda"  # 同步目标参数：cuda
+SELFEXP_NAME="Gait_selfsup_GSDNN_baseline"
+# SELF_MODE="debug"
+SELF_SEED=42
+SELF_DEVICE="cuda"
 
 # 数据参数
-DATA_PATH="datasets/data_10000/all_data.mat"  # 完全同步目标路径
-BATCH_SIZE=256  # 同步目标参数：256
-NUM_WORKERS=4  # 同步目标参数：0
-VIEWS=2  # 同步目标参数：2
+SELF_DATA_PATH="datasets/data_10000/all_data.mat"
+SELF_BATCH_SIZE=256
+SELF_NUM_WORKERS=4
+SELF_VIEWS=2
 
-# 模型参数（核心：GSDNN专属参数完全同步目标值）
-MODEL_TYPE="GSDNN"  # 固定为GSDNN，与目标一致
+# 模型参数（GSDNN专属）
+SELF_MODEL_TYPE="GSDNN"
+SELF_NUM_CLASSES=1
+SELF_BLOCK_N=8
+SELF_INIT_CHANNELS=18
+SELF_GROWTH_RATE=12
+SELF_BASE_CHANNELS=48
+SELF_STRIDE=2
+SELF_DROPOUT_GSDNN=0.2
 
-## GSDNN专属参数（1:1匹配目标值，无任何修改）
-NUM_CLASSES=1
-BLOCK_N=8
-INIT_CHANNELS=18
-GROWTH_RATE=12
-BASE_CHANNELS=48
-STRIDE=2
-DROPOUT_GSDNN=0.2
+# 投影头参数
+SELF_OUT_DIM=132
+SELF_PROJ_OUT_DIM=128
+SELF_CONTRASTIVE_DIM=256
+SELF_DROPOUT=0.5
 
-## 投影头通用参数（完全同步目标值）
-OUT_DIM=132
-PROJ_OUT_DIM=128
-CONTRASTIVE_DIM=256
-DROPOUT=0.5
+# 训练参数
+SELF_EPOCHS=200
+SELF_LR=0.3
+SELF_TEMPERATURE=0.5
+SELF_MOMENTUM=0.9
+SELF_WEIGHT_DECAY=0.0001
+SELF_WARMUP_RATIO=0.05
 
-# 训练参数（核心超参数同步目标值，补充动量/权重衰减/预热比）
-EPOCHS=200  # 同步目标参数：40
-LR=0.3  # 同步目标参数：0.3（原3e-4已替换）
-TEMPERATURE=0.5  # 同步目标参数：0.5
-MOMENTUM=0.9  # 新增：同步目标参数
-WEIGHT_DECAY=0.0001  # 新增：同步目标参数
-WARMUP_RATIO=0.05  # 新增：同步目标参数
+# 数据增强
+SELF_FREQ_KEEP_RATIO=0.6
 
-# 数据增强参数
-FREQ_KEEP_RATIO=0.6  # 同步目标参数：0.6
+# 保存和日志
+SELF_SAVE_DIR="./save_models"  # 独立目录避免覆盖
+SELF_LOG_DIR_TB="./runs"
+SELF_SAVE_FREQ=10
+SELF_PRINT_PARAMS=True
+SELF_TRAIN_SCRIPT="train_selfsup.py"
 
-# 保存和日志参数（路径/频率完全同步目标值）
-SAVE_DIR="./save_models"  # 同步目标参数：根目录，不额外分模型子目录
-LOG_DIR_TB="./runs"  # 同步目标参数：./runs
-SAVE_FREQ=10  # 同步目标参数：10
-PRINT_PARAMS=True  # 新增：同步目标参数：打印参数
+# ======================== 【任务2：微调分类训练】参数配置 ========================
+# 基础配置
+FINETUNE_NAME="Gait_finetune_GSDNN_baseline"
+# FINETUNE_MODE="normal"
+FINETUNE_SEED=42
+FINETUNE_DEVICE="cuda"
 
-# ======================== GPU配置 ========================
-# 指定GPU（单卡：0，多卡：0,1,2），注释则自动使用所有可用GPU
-export CUDA_VISIBLE_DEVICES="0"
+# 数据参数
+FINETUNE_DATA_PATH="./datasets/data_10000/"
+FINETUNE_TRAIN_RATIO=0.7
+FINETUNE_BATCH_SIZE=64
+FINETUNE_NUM_WORKERS=4
 
-# ======================== 激活虚拟环境（可选） ========================
+# 模型参数
+FINETUNE_MODEL_TYPE="GSDNN"
+FINETUNE_NUM_CLASSES=27
+# 自动关联对比学习的最佳模型输出路径
+FINETUNE_PRETRAINED_MODEL="${SELF_SAVE_DIR}/${SELFEXP_NAME}/best_model.pth"
+FINETUNE_FREEZE_ENCODER="False"
+
+# 投影头参数
+FINETUNE_OUT_DIM=132
+FINETUNE_PROJ_OUT_DIM=128
+FINETUNE_CONTRASTIVE_DIM=256
+FINETUNE_DROPOUT=0.5
+
+# 训练参数
+FINETUNE_NUM_EPOCHS=200
+FINETUNE_LEARNING_RATE=3e-4
+
+# 数据增强
+FINETUNE_AUGMENTATION_PROB=0.5
+FINETUNE_FREQ_KEEP_RATIO=0.6
+
+# 保存和日志
+FINETUNE_SAVE_DIR="./save_models"  
+FINETUNE_LOG_DIR_TB="./runs"
+FINETUNE_TRAIN_SCRIPT="train_finetune.py"
+
+# ======================== 激活虚拟环境 ========================
 if [ -f "${VENV_PATH}" ]; then
     echo "激活虚拟环境: ${VENV_PATH}"
     source ${VENV_PATH}
@@ -73,64 +107,113 @@ else
     echo "未找到虚拟环境，使用系统Python环境"
 fi
 
-# ======================== 开始训练 ========================
-echo "========================================"
-echo "训练启动时间: $(date)"
-echo "实验名称: ${EXP_NAME}"
-echo "模型类型: ${MODEL_TYPE}"
-echo "训练模式: ${MODE}"
-echo "使用设备: ${DEVICE}"
-echo "日志保存路径: ${LOG_DIR}/${EXP_NAME}_${MODEL_TYPE}_$(date +%Y%m%d_%H%M%S).log"
-echo "模型保存路径: ${SAVE_DIR}"
-echo "========================================"
+# ======================== 工具函数：打印任务分隔符 ========================
+print_task_header() {
+    echo -e "\n=============================================================="
+    echo "============== 开始执行：$1 =============="
+    echo "=============================================================="
+}
 
-# 拼接完整训练命令（新增所有目标参数，严格匹配parse_args参数名）
-TRAIN_CMD="python ${TRAIN_SCRIPT} \
-    --exp_name ${EXP_NAME} \
+# ======================== 任务1：执行对比学习训练 ========================
+print_task_header "对比学习训练 (Self-supervised Training)"
+SELF_LOG_FILE="${LOG_ROOT_DIR}/${SELFEXP_NAME}_${SELF_MODEL_TYPE}_$(date +%Y%m%d_%H%M%S).log"
+
+# 拼接对比学习训练命令
+SELF_TRAIN_CMD="python ${SELF_TRAIN_SCRIPT} \
+    --exp_name ${SELFEXP_NAME} \
     --mode ${MODE} \
-    --data_path ${DATA_PATH} \
-    --batch_size ${BATCH_SIZE} \
-    --num_workers ${NUM_WORKERS} \
-    --views ${VIEWS} \
-    --model_type ${MODEL_TYPE} \
-    --num_classes ${NUM_CLASSES} \
-    --block_n ${BLOCK_N} \
-    --init_channels ${INIT_CHANNELS} \
-    --growth_rate ${GROWTH_RATE} \
-    --base_channels ${BASE_CHANNELS} \
-    --stride ${STRIDE} \
-    --dropout_GSDNN ${DROPOUT_GSDNN} \
-    --out_dim ${OUT_DIM} \
-    --proj_out_dim ${PROJ_OUT_DIM} \
-    --contrastive_dim ${CONTRASTIVE_DIM} \
-    --dropout ${DROPOUT} \
-    --epochs ${EPOCHS} \
-    --lr ${LR} \
-    --momentum ${MOMENTUM} \
-    --weight_decay ${WEIGHT_DECAY} \
-    --warmup_ratio ${WARMUP_RATIO} \
-    --temperature ${TEMPERATURE} \
-    --freq_keep_ratio ${FREQ_KEEP_RATIO} \
-    --save_dir ${SAVE_DIR} \
-    --log_dir ${LOG_DIR_TB} \
-    --save_freq ${SAVE_FREQ} \
-    --print_params ${PRINT_PARAMS} \
-    --device ${DEVICE} \
-    --seed ${SEED}"
+    --data_path ${SELF_DATA_PATH} \
+    --batch_size ${SELF_BATCH_SIZE} \
+    --num_workers ${SELF_NUM_WORKERS} \
+    --views ${SELF_VIEWS} \
+    --model_type ${SELF_MODEL_TYPE} \
+    --num_classes ${SELF_NUM_CLASSES} \
+    --block_n ${SELF_BLOCK_N} \
+    --init_channels ${SELF_INIT_CHANNELS} \
+    --growth_rate ${SELF_GROWTH_RATE} \
+    --base_channels ${SELF_BASE_CHANNELS} \
+    --stride ${SELF_STRIDE} \
+    --dropout_GSDNN ${SELF_DROPOUT_GSDNN} \
+    --out_dim ${SELF_OUT_DIM} \
+    --proj_out_dim ${SELF_PROJ_OUT_DIM} \
+    --contrastive_dim ${SELF_CONTRASTIVE_DIM} \
+    --dropout ${SELF_DROPOUT} \
+    --epochs ${SELF_EPOCHS} \
+    --lr ${SELF_LR} \
+    --momentum ${SELF_MOMENTUM} \
+    --weight_decay ${SELF_WEIGHT_DECAY} \
+    --warmup_ratio ${SELF_WARMUP_RATIO} \
+    --temperature ${SELF_TEMPERATURE} \
+    --freq_keep_ratio ${SELF_FREQ_KEEP_RATIO} \
+    --save_dir ${SELF_SAVE_DIR} \
+    --log_dir ${SELF_LOG_DIR_TB} \
+    --save_freq ${SELF_SAVE_FREQ} \
+    --print_params ${SELF_PRINT_PARAMS} \
+    --device ${SELF_DEVICE} \
+    --seed ${SELF_SEED}"
 
-# ======================== 输出完整的TRAIN_CMD ========================
-echo -e "\n【即将执行的训练命令】:"
+# 输出并执行对比学习命令
+echo -e "\n【对比学习训练命令】:"
 echo "=============================================================="
-echo ${TRAIN_CMD}  # 单行输出（便于复制执行）
+echo ${SELF_TRAIN_CMD}
 echo "=============================================================="
+${SELF_TRAIN_CMD} 2>&1 | tee ${SELF_LOG_FILE}
 
-# 执行训练并记录日志（终端+文件双输出，避免日志路径重复生成时间戳）
-LOG_FILE="${LOG_DIR}/${EXP_NAME}_${MODEL_TYPE}_$(date +%Y%m%d_%H%M%S).log"
-${TRAIN_CMD} 2>&1 | tee ${LOG_FILE}
+# 验证对比学习模型是否生成
+if [ ! -f "${FINETUNE_PRETRAINED_MODEL}" ]; then
+    echo -e "\n警告：对比学习训练未生成预期的预训练模型文件！"
+    echo "路径：${FINETUNE_PRETRAINED_MODEL}"
+    echo "请检查对比学习训练是否正常完成，微调训练将跳过！"
+    exit 1
+fi
 
-# ======================== 训练结束 ========================
-echo "========================================"
-echo "训练结束时间: $(date)"
-echo "日志文件: ${LOG_FILE}"
-echo "模型文件: ${SAVE_DIR}"
-echo "========================================"
+# ======================== 任务2：执行微调分类训练 ========================
+print_task_header "微调分类训练 (Finetune Classification Training)"
+FINETUNE_LOG_FILE="${LOG_ROOT_DIR}/${FINETUNE_NAME}_${FINETUNE_MODEL_TYPE}_$(date +%Y%m%d_%H%M%S).log"
+
+# 拼接微调训练命令
+FINETUNE_TRAIN_CMD="python ${FINETUNE_TRAIN_SCRIPT} \
+    --exp_name ${FINETUNE_NAME} \
+    --mode ${MODE} \
+    --data_path ${FINETUNE_DATA_PATH} \
+    --train_ratio ${FINETUNE_TRAIN_RATIO} \
+    --batch_size ${FINETUNE_BATCH_SIZE} \
+    --num_workers ${FINETUNE_NUM_WORKERS} \
+    --num_epochs ${FINETUNE_NUM_EPOCHS} \
+    --learning_rate ${FINETUNE_LEARNING_RATE} \
+    --num_classes ${FINETUNE_NUM_CLASSES} \
+    --model_type ${FINETUNE_MODEL_TYPE} \
+    --pretrained_model ${FINETUNE_PRETRAINED_MODEL} \
+    --out_dim ${FINETUNE_OUT_DIM} \
+    --proj_out_dim ${FINETUNE_PROJ_OUT_DIM} \
+    --contrastive_dim ${FINETUNE_CONTRASTIVE_DIM} \
+    --dropout ${FINETUNE_DROPOUT} \
+    --augmentation_prob ${FINETUNE_AUGMENTATION_PROB} \
+    --freq_keep_ratio ${FINETUNE_FREQ_KEEP_RATIO} \
+    --device ${FINETUNE_DEVICE} \
+    --log_dir ${FINETUNE_LOG_DIR_TB} \
+    --save_dir ${FINETUNE_SAVE_DIR} \
+    --seed ${FINETUNE_SEED}"
+
+# 处理冻结编码器布尔参数
+if [ "${FINETUNE_FREEZE_ENCODER}" = "True" ]; then
+    FINETUNE_TRAIN_CMD="${FINETUNE_TRAIN_CMD} --freeze_encoder"
+fi
+
+# 输出并执行微调命令
+echo -e "\n【微调分类训练命令】:"
+echo "=============================================================="
+echo ${FINETUNE_TRAIN_CMD}
+echo "=============================================================="
+${FINETUNE_TRAIN_CMD} 2>&1 | tee ${FINETUNE_LOG_FILE}
+
+# ======================== 训练完成 ========================
+echo -e "\n=============================================================="
+echo "============== 所有训练任务执行完成 =============="
+echo "=============================================================="
+echo "对比学习日志: ${SELF_LOG_FILE}"
+echo "对比学习模型: ${SELF_SAVE_DIR}"
+echo "微调分类日志: ${FINETUNE_LOG_FILE}"
+echo "微调分类模型: ${FINETUNE_SAVE_DIR}"
+echo "完成时间: $(date)"
+echo "=============================================================="
