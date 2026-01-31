@@ -304,9 +304,11 @@ def train(args):
     criterion = nn.CrossEntropyLoss()
 
     # 创建TensorBoard writer
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(args.log_dir, args.exp_name + '_' + timestamp)
-    save_dir = os.path.join(args.save_dir, args.exp_name + '_' + timestamp)
+    # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # log_dir = os.path.join(args.log_dir, args.exp_name + '_' + timestamp)
+    # save_dir = os.path.join(args.save_dir, args.exp_name + '_' + timestamp)
+    log_dir = args.log_dir
+    save_dir = args.save_dir
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(save_dir, exist_ok=True)
     

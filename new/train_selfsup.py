@@ -174,10 +174,12 @@ def train_epoch(model, dataloader, criterion, optimizer, warmup_scheduler,
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)  # 梯度范数最大为1.0，可微调
         optimizer.step()
         
-        warmup_scheduler.step()  # 全程调用，预热结束后仅返回1.0，不影响LR
+         
         step = epoch * steps_one_epoch + batch_idx + 1 
         if step >= warmup_steps: # 预热结束后，启动余弦退火
             cos_scheduler.step()
+        else:
+            warmup_scheduler.step() 
 
         total_loss += loss.item()
         num_batches += 1
@@ -218,9 +220,11 @@ def train(args):
     print(f'Using device: {device}')
 
     # 3. 创建实验目录        
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_dir = os.path.join(args.log_dir, args.exp_name + '_' + timestamp)
-    save_dir = os.path.join(args.save_dir, args.exp_name + '_' + timestamp)
+    # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # log_dir = os.path.join(args.log_dir, args.exp_name + '_' + timestamp)
+    # save_dir = os.path.join(args.save_dir, args.exp_name + '_' + timestamp)
+    log_dir = args.log_dir
+    save_dir = args.save_dir
     os.makedirs(log_dir, exist_ok=True)
     os.makedirs(save_dir, exist_ok=True)
 

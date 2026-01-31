@@ -7,12 +7,13 @@ set -e  # 遇到错误立即退出，保证训练稳定性
 # ======================== 全局基础配置 ========================
 # 虚拟环境激活路径（两个任务共用）
 VENV_PATH="/root/miniconda3/envs/d2_cuda118/bin/activate"
+TIME_STAMP=$(date +%Y%m%d_%H%M%S)
 # 日志根目录（自动创建）
 LOG_ROOT_DIR="./train_logs"
 mkdir -p ${LOG_ROOT_DIR}
 # GPU配置（两个任务共用）
 export CUDA_VISIBLE_DEVICES="0"
-MODE="debug" # "debug" or "normal"
+MODE="normal" # "debug" or "normal"
 # ======================== 【任务1：对比学习训练】参数配置 ========================
 # 基础配置
 SELFEXP_NAME="Gait_selfsup_GSDNN_baseline"
@@ -54,8 +55,8 @@ SELF_WARMUP_RATIO=0.05
 SELF_FREQ_KEEP_RATIO=0.6
 
 # 保存和日志
-SELF_SAVE_DIR="./save_models"  # 独立目录避免覆盖
-SELF_LOG_DIR_TB="./runs"
+SELF_SAVE_DIR="./save_models"/${SELFEXP_NAME}_${TIME_STAMP} # 独立目录避免覆盖
+SELF_LOG_DIR_TB="./runs"/${SELFEXP_NAME}_${TIME_STAMP}
 SELF_SAVE_FREQ=10
 SELF_PRINT_PARAMS=True
 SELF_TRAIN_SCRIPT="train_selfsup.py"
@@ -77,7 +78,7 @@ FINETUNE_NUM_WORKERS=4
 FINETUNE_MODEL_TYPE="GSDNN"
 FINETUNE_NUM_CLASSES=27
 # 自动关联对比学习的最佳模型输出路径
-FINETUNE_PRETRAINED_MODEL="${SELF_SAVE_DIR}/${SELFEXP_NAME}/best_model.pth"
+FINETUNE_PRETRAINED_MODEL=${SELF_SAVE_DIR}/"best_model.pth"
 FINETUNE_FREEZE_ENCODER="False"
 
 # 投影头参数
@@ -95,8 +96,8 @@ FINETUNE_AUGMENTATION_PROB=0.5
 FINETUNE_FREQ_KEEP_RATIO=0.6
 
 # 保存和日志
-FINETUNE_SAVE_DIR="./save_models"  
-FINETUNE_LOG_DIR_TB="./runs"
+FINETUNE_SAVE_DIR="./save_models"/${FINETUNE_NAME}_${TIME_STAMP}  
+FINETUNE_LOG_DIR_TB="./runs"/${FINETUNE_NAME}_${TIME_STAMP}
 FINETUNE_TRAIN_SCRIPT="train_finetune.py"
 
 # ======================== 激活虚拟环境 ========================
@@ -139,7 +140,7 @@ SELF_TRAIN_CMD="python ${SELF_TRAIN_SCRIPT} \
     --contrastive_dim ${SELF_CONTRASTIVE_DIM} \
     --dropout ${SELF_DROPOUT} \
     --epochs ${SELF_EPOCHS} \
-    --lr ${SELF_LR} \
+    --base_lr ${SELF_LR} \
     --momentum ${SELF_MOMENTUM} \
     --weight_decay ${SELF_WEIGHT_DECAY} \
     --warmup_ratio ${SELF_WARMUP_RATIO} \
