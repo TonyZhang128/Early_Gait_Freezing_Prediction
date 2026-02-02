@@ -248,7 +248,7 @@ def train(args):
     # 6. 创建模型和优化器
     print(f'Creating model...Encoder use {args.model_type}')
     model = create_model(device, args.model_type, args)
-    data_shape = [1, 18, 101]
+    data_shape = [1, 1, 18, 101]
     FLOPs_calculat(model, device, data_shape)
     criterion = ContrastiveLoss(temperature=args.temperature).to(device)
     
@@ -312,7 +312,7 @@ def parse_args():
     parser.add_argument('--views', type=int, default=2, help='对比学习的视图数量')
 
     # 模型参数
-    parser.add_argument("--model_type", type=str, default="GSDNN", help="模型类型, 可以选GSDNN,ResNet,EEGNet,Conformer")
+    parser.add_argument("--model_type", type=str, default="ResNet", help="模型类型, 可以选GSDNN,ResNet,EEGNet,Conformer")
     ## parameters for GSDNN
     parser.add_argument('--num_classes', type=int, default=1, help='输出类别数')
     parser.add_argument('--block_n', type=int, default=8, help='模块堆叠次数')
@@ -324,18 +324,18 @@ def parse_args():
     
     ## parameters for projection head
     ### GSDNN [132 128 256]
-    ### ResNet18 [64 128 256]
-    parser.add_argument('--out_dim', type=int, default=132, help='编码器输出维度')
-    parser.add_argument('--proj_out_dim', type=int, default=128, help='投影头中间层维度')
-    parser.add_argument('--contrastive_dim', type=int, default=256, help='进行对比学习的特征空间维度')
-    parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
+    ### ResNet18 [512 1024 128]
+    parser.add_argument('--out_dim', type=int, default=512, help='编码器输出维度')
+    parser.add_argument('--proj_out_dim', type=int, default=1024, help='投影头中间层维度')
+    parser.add_argument('--contrastive_dim', type=int, default=128, help='进行对比学习的特征空间维度')
+    parser.add_argument('--dropout', type=float, default=0.1, help='Dropout概率')
     
 
     # 训练参数
     parser.add_argument('--epochs', type=int, default=40, help='训练轮数')
     parser.add_argument('--base_lr', type=float, default=0.3, help='学习率')
     parser.add_argument('--warmup_ratio', type=float, default=0.05, help='学习率预热步数（比例）')
-    parser.add_argument('--temperature', type=float, default=0.5, help='对比学习温度参数')
+    parser.add_argument('--temperature', type=float, default=0.1, help='对比学习温度参数')
     
     parser.add_argument('--momentum', type=float, default=0.9, help='SGD动量')
     parser.add_argument('--weight_decay', type=float, default=1e-4, help='权重衰减系数')
