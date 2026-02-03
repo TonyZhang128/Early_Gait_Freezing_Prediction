@@ -14,8 +14,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.metrics import f1_score, precision_score,recall_score, auc, roc_auc_score
 from torch.utils.tensorboard import SummaryWriter
+from torchvision import transforms
+from torch.utils.data import DataLoader, Dataset
+import scipy.io as sio
 
-from datasets.Gait_dataset import create_dataloaders
+
+
+from datasets.Gait_dataset_0202 import GaitDataModule
 # 导入模型
 from models.DNN import DNN
 from models.GSDNN_new import GSDNN_new
@@ -25,6 +30,174 @@ from utils.analysis import set_seed
 from utils.calculate import FLOPs_calculat
 from utils.plt_curves import plot_confusion_matrix
 
+# # ================================ 数据增强模块 ================================
+
+# def reverse_time_series(data):
+#     """时间序列反转"""
+#     return -data
+
+
+# def random_channel_shuffle(data):
+#     """随机通道打乱"""
+#     assert data.dim() == 3, "Input data must be 3D with channels as the second dimension"
+#     num_channels = data.size(1)
+#     shuffled_indices = torch.randperm(num_channels)
+#     return data[:, shuffled_indices, :]
+
+
+# def random_frequency_dropout(img, keep_ratio=0.6):
+#     """随机频率成分丢弃"""
+#     fft_img = torch.fft.fftn(img, dim=2)
+#     magnitude = torch.abs(fft_img)
+#     num_freqs = magnitude.shape[2]
+#     keep_indices = np.random.choice(num_freqs, int(num_freqs * keep_ratio), replace=False)
+#     mask = torch.zeros_like(magnitude, dtype=torch.bool)
+#     mask[:, :, keep_indices] = 1
+#     fft_img = fft_img * mask
+#     img = torch.fft.ifftn(fft_img, dim=2)
+#     return torch.real(img)
+
+
+# def get_data_transforms(augmentation_prob=0.5, freq_keep_ratio=0.6):
+#     """构建数据增强变换组合"""
+#     return transforms.Compose([
+#         transforms.RandomApply([
+#             transforms.Lambda(lambda x: random_frequency_dropout(x, freq_keep_ratio)),
+#             transforms.Lambda(reverse_time_series),
+#         ], p=augmentation_prob)
+#     ])
+
+
+# # ================================ 数据集类 ================================
+
+# class GaitDataset(Dataset):
+#     """步态数据集类"""
+
+#     def __init__(self, data_array, data_label, data_transform=None, views=2):
+#         """
+#         Args:
+#             data_array: 数据数组
+#             data_label: 标签数组
+#             data_transform: 数据变换
+#             views: 视角数量
+#         """
+#         self.transform = data_transform
+#         self.data_array = data_array
+#         self.data_label = data_label
+#         self.views = views
+
+#     def __len__(self):
+#         return len(self.data_array)
+
+#     def __getitem__(self, idx):
+#         img = self.data_array[idx]
+#         if self.transform:
+#             img = self.transform(torch.tensor(np.expand_dims(img, axis=0)))
+#         return img, self.data_label[idx]
+
+
+# # ================================ 数据加载模块 ================================
+
+# def load_and_split_data(data_path, train_ratio=0.8, random_seed=42):
+#     """
+#     加载并划分训练集和测试集
+
+#     Args:
+#         data_path: 数据文件路径（不含后缀）
+#         train_ratio: 训练集比例
+#         random_seed: 随机种子
+
+#     Returns:
+#         train_data, test_data, train_label, test_label
+#     """
+#     np.random.seed(random_seed)
+
+#     # 加载数据
+#     # data_finetue = sio.loadmat(f'{data_path}/sub_train_data.mat')['sub_train_data']
+#     # labels_finetue = sio.loadmat(f'{data_path}/sub_train_label.mat')['sub_train_label'][0]
+    
+#     # data_test = sio.loadmat(f'{data_path}/sub_test_data.mat')['sub_data']
+#     # labels_test = sio.loadmat(f'{data_path}/sub_test_label.mat')['sub_label'][0]
+    
+#     # train_data = data_finetue
+#     # train_label = labels_finetue - 1
+#     # test_data = data_test
+#     # test_label = labels_test - 1
+    
+#     data = sio.loadmat(f'{data_path}/sub_data.mat')['sub_data']
+#     labels = sio.loadmat(f'{data_path}/sub_label.mat')['sub_label'][0]
+
+#     # 打乱索引
+#     random_index = np.array(range(len(data)))
+#     np.random.shuffle(random_index)
+
+#     # 应用打乱
+#     data = data[random_index]
+#     labels = labels[random_index]
+
+#     # 划分数据集
+#     train_len = int(len(data) * train_ratio)
+
+#     train_data = data[:train_len]
+#     test_data = data[train_len:]
+#     train_label = labels[:train_len] - 1  # 标签从0开始
+#     test_label = labels[train_len:] - 1
+
+#     return train_data, test_data, train_label, test_label
+
+
+# def create_dataloaders(args):
+#     """
+#     创建数据加载器
+
+#     Args:
+#         args: 参数对象
+
+#     Returns:
+#         train_loader, test_loader
+#     """
+#     # 加载数据
+#     train_data, test_data, train_label, test_label = load_and_split_data(
+#         args.data_path, args.train_ratio
+#     )
+
+#     # 创建数据增强
+#     data_transforms = get_data_transforms(
+#         args.augmentation_prob,
+#         args.freq_keep_ratio
+#     )
+
+#     # 创建数据集
+#     train_dataset = GaitDataset(
+#         data_array=train_data,
+#         data_label=train_label,
+#         data_transform=data_transforms,
+#         views=2
+#     )
+
+#     test_dataset = GaitDataset(
+#         data_array=test_data,
+#         data_label=test_label,
+#         data_transform=data_transforms,
+#         views=2
+#     )
+
+#     # 创建数据加载器
+#     train_loader = DataLoader(
+#         train_dataset,
+#         batch_size=args.batch_size,
+#         shuffle=True,
+#         num_workers=args.num_workers
+#     )
+
+#     test_loader = DataLoader(
+#         test_dataset,
+#         batch_size=args.batch_size,
+#         shuffle=False,
+#         num_workers=args.num_workers
+#     )
+
+#     return train_loader, test_loader
 
 # ================================ 模型定义模块 ================================
 
@@ -170,7 +343,8 @@ def evaluate(model, dataloader, device):
 
     with torch.no_grad():
         for x, y in dataloader:
-            x = torch.squeeze(x, dim=1)
+            if x.ndim != 4:
+                x = torch.squeeze(x, dim=1)
             x = x.to(device=device, dtype=torch.float32)
 
             # 获取模型输出（logits）
@@ -255,7 +429,9 @@ def train(args):
     
     # 创建数据加载器
     print("Creating dataloaders...")
-    train_loader, test_loader = create_dataloaders(args)
+    # train_loader, test_loader = create_dataloaders(args)
+    data_module = GaitDataModule(args)
+    train_loader, test_loader = data_module.setup()
     print(f"Train batches: {len(train_loader)}, Total train data:{len(train_loader.dataset)} \
           Test batches: {len(test_loader)}, Total test data:{len(test_loader.dataset)}")
 
@@ -272,7 +448,8 @@ def train(args):
         else:
             # 低版本移除 weights_only 参数
             state_dict = torch.load(args.pretrained_model)
-        model.encoder.load_state_dict(state_dict, strict=False)
+        # 重大bug，之前的代码没有成功加载预训练权重！
+        model.encoder.load_state_dict(state_dict['model_state_dict'], strict=False)
 
     # 冻结编码器参数
     if args.freeze_encoder:
@@ -289,7 +466,7 @@ def train(args):
                     nn.init.constant_(m.bias, 0)
                 
     # 计算模型参数量与FLOPS
-    data_shape = [1, 18, 101]
+    data_shape = [1,1, 18, 101]
     FLOPs_calculat(model, device, data_shape)
     
     # 创建优化器和损失函数
@@ -297,9 +474,14 @@ def train(args):
         filter(lambda p: p.requires_grad, model.parameters()),
         lr=args.learning_rate
     )
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_step_size, 
-                                                gamma=args.lr_gamma)
+    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_step_size, 
+    #                                             gamma=args.lr_gamma)
 
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optimizer,
+                T_max=args.num_epochs,  # 余弦周期：学习率从初始值衰减到最小值的轮数，设为总训练轮数最佳
+                eta_min=1e-6        # 学习率衰减的最小值（避免衰减到0导致训练停滞，可根据需求调整）
+            )
 
     criterion = nn.CrossEntropyLoss()
 
@@ -465,7 +647,7 @@ def parse_args():
 
     # 训练相关
     parser.add_argument('--num_epochs', type=int, default=20, help='训练轮数')
-    parser.add_argument('--learning_rate', type=float, default=3e-4, help='学习率')
+    parser.add_argument('--learning_rate', type=float, default=2e-4, help='学习率')
     parser.add_argument('--num_classes', type=int, default=27, help='分类数量')
     parser.add_argument('--lr_step_size', type=int, default=10, help='StepLR学习率衰减步长')
     parser.add_argument('--lr_gamma', type=float, default=0.5, help='StepLR学习率衰减系数')
@@ -475,7 +657,7 @@ def parse_args():
                        choices=['DNN', 'GSDNN', 'GSDNN2', 'GSDNN_new', 'MSDNN', 'ResNet101'],
                        help='模型类型')
     parser.add_argument('--pretrained_model', type=str,
-                       default='./save_models/Gait_self_supervised_training/best_model.pth',
+                       default='./save_models/Gait_selfsup_GSDNN_baseline_20260131_192518/best_model.pth',
                        help='预训练模型路径') # './save_model/best_modelGSDNNk3_27class_aug123.pth'
     parser.add_argument('--freeze_encoder', action='store_true', help='是否冻结编码器参数')
 

@@ -152,7 +152,7 @@ def create_dataloaders(args):
     test_dataset = GaitDataset(
         data_array=test_data,
         data_label=test_label,
-        data_transform=data_transforms,
+        # data_transform=data_transforms,
         views=2
     )
 
