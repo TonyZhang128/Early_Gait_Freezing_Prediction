@@ -653,7 +653,7 @@ def parse_args():
     parser.add_argument('--lr_gamma', type=float, default=0.5, help='StepLR学习率衰减系数')
 
     # 模型相关
-    parser.add_argument('--model_type', type=str, default='GSDNN',
+    parser.add_argument('--model_type', type=str, default='ResNet',
                        choices=['DNN', 'GSDNN', 'GSDNN2', 'GSDNN_new', 'MSDNN', 'ResNet101'],
                        help='模型类型')
     parser.add_argument('--pretrained_model', type=str,
@@ -671,11 +671,11 @@ def parse_args():
     
     ## parameters for projection head
     ### GSDNN [132 128 256]
-    ### ResNet18 [64 128 256]
-    parser.add_argument('--out_dim', type=int, default=132, help='编码器输出维度')
-    parser.add_argument('--proj_out_dim', type=int, default=128, help='投影头中间层维度')
-    parser.add_argument('--contrastive_dim', type=int, default=256, help='进行对比学习的特征空间维度')
-    parser.add_argument('--dropout', type=float, default=0.5, help='Dropout概率')
+    ### ResNet18 [512 1024 128]
+    parser.add_argument('--out_dim', type=int, default=512, help='编码器输出维度')
+    parser.add_argument('--proj_out_dim', type=int, default=1024, help='投影头中间层维度')
+    parser.add_argument('--contrastive_dim', type=int, default=128, help='进行对比学习的特征空间维度')
+    parser.add_argument('--dropout', type=float, default=0.1, help='Dropout概率')
     
     # 数据增强相关
     parser.add_argument('--augmentation_prob', type=float, default=0.5, help='数据增强概率')
