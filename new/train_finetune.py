@@ -20,7 +20,7 @@ import scipy.io as sio
 
 
 
-from datasets.Gait_dataset_0202 import GaitDataModule
+from datasets.Gait_dataset_new import GaitDataModule
 # 导入模型
 from models.DNN import DNN
 from models.GSDNN_new import GSDNN_new
