@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Model checkpoints
+*.pth
+*.pt
+
+# Data files
+*.csv
+*.xlsx
+*.xls
+
+# Logs
+*.log
+*.tfevents.*
+
+# Training outputs
+train_logs/
+save_models/
+runs/
+
+# Datasets
+datasets/
+
+# Script outputs
+scripts/
+
+# OS
+.DS_Store
+Thumbs.db
