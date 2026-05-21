@@ -360,7 +360,7 @@ def parse_args():
     
     if args.print_params:
         print("="*70)
-        print("📊 步态识别对比学习训练配置信息")
+        print("步态识别对比学习训练配置信息")
         print("="*70)
         for key, value in sorted(vars(args).items()):
             print(f"  {key.ljust(30)}: {value}")
