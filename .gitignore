@@ -25,7 +25,7 @@ runs/
 datasets/
 
 # Script outputs
-scripts/
+# scripts/
 
 # OS
 .DS_Store
