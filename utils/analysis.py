@@ -18,7 +18,7 @@ def set_seed(seed):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         
-def save_checkpoint(model, save_dir, filename, epoch, loss, is_best=False):
+def save_checkpoint(model, save_dir, epoch, loss):
     """保存模型检查点
 
     Args:
@@ -37,14 +37,8 @@ def save_checkpoint(model, save_dir, filename, epoch, loss, is_best=False):
     }
 
     # 保存检查点
-    save_path = os.path.join(save_dir, filename)
+    save_path = os.path.join(save_dir, 'best_self_sup.pth')
     torch.save(checkpoint, save_path)
-
-    # 如果是最佳模型，额外保存
-    if is_best:
-        best_path = os.path.join(save_dir, 'best_model.pth')
-        torch.save(checkpoint, best_path)
-        print(f'Epoch {epoch + 1}, New minimum loss: {loss:.6f}, Best model saved.')
 
 
 def plot_loss_curve(loss_values, save_dir):

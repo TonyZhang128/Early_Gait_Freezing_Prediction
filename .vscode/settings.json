@@ -1,4 +1,8 @@
 {
     "python-envs.defaultEnvManager": "ms-python.python:venv",
-    "python-envs.defaultPackageManager": "ms-python.python:pip"
+    "python-envs.defaultPackageManager": "ms-python.python:pip",
+    // 禁用自动激活，使用完整路径
+    "python.terminal.activateEnvironment": false,
+    // 明确指定解释器
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
 }
