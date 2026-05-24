@@ -22,7 +22,7 @@ save_models/
 runs/
 
 # Datasets
-datasets/
+datasets/data_10000
 
 # Script outputs
 # scripts/
