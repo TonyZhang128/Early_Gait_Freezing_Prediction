@@ -12,6 +12,7 @@ from datasets.Contrastive_dataset import load_data
 from models.resnet import ResNet18
 from models.GSDNN_new import GSDNN_new
 from models.Conformer import Conformer
+from models.mambav3 import MambaV3
 from utils.analysis import set_seed, save_checkpoint
 from utils.calculate import FLOPs_calculat
 
@@ -63,6 +64,14 @@ def build_model(model_type: str, args, device: str):
         encoder = ResNet18()
     elif model_type == 'Conformer':
         encoder = Conformer(emb_size=40, depth=6, n_classes=4)
+    elif model_type == 'Mamba':
+        encoder = MambaV3(
+            num_classes=args.num_classes,
+            in_channels=args.init_channels,
+            d_model=64,
+            n_layers=4,
+            dropout=args.dropout,
+        )
     else:
         raise ValueError(f'Unsupported model type: {model_type}')
 
@@ -116,7 +125,7 @@ def train_epoch(model, dataloader, criterion, optimizer, warmup_scheduler,
     steps_per_epoch = len(dataloader)
 
     for batch_idx, (img1, img2) in enumerate(dataloader):
-        if args.model_type == 'GSDNN':
+        if args.model_type in ('GSDNN', 'Mamba'):
             img1 = img1.squeeze(1)
             img2 = img2.squeeze(1)
 
@@ -179,7 +188,8 @@ def train(args):
 
     print(f'Building model: {args.model_type}')
     model = build_model(args.model_type, args, device)
-    FLOPs_calculat(model, device, [1, 1, 18, 101])
+    flops_input = [1, 18, 101] if args.model_type == 'Mamba' else [1, 1, 18, 101]
+    FLOPs_calculat(model, device, flops_input)
 
     criterion = ContrastiveLoss(temperature=args.temperature).to(device)
 

@@ -14,6 +14,7 @@ from datasets.Gait_dataset_new import GaitDataModule, GaitDataset
 from models.GSDNN_new import GSDNN_new
 from models.resnet import ResNet18
 from models.Conformer import Conformer
+from models.mambav3 import MambaV3
 from utils.analysis import set_seed
 from utils.calculate import FLOPs_calculat
 from utils.plt_curves import plot_confusion_matrix
@@ -55,6 +56,14 @@ def build_model(model_type: str, args, num_classes: int, device: str):
         base = ResNet18()
     elif model_type == 'Conformer':
         base = Conformer(emb_size=40, depth=6, n_classes=4)
+    elif model_type == 'Mamba':
+        base = MambaV3(
+            num_classes=num_classes,
+            in_channels=args.init_channels,
+            d_model=64,
+            n_layers=4,
+            dropout=args.dropout,
+        )
     else:
         raise ValueError(f'Unsupported model type: {model_type}')
 
@@ -73,7 +82,7 @@ def train_epoch(model, dataloader, criterion, optimizer, device, args):
     num_batches = 0
 
     for x, label in dataloader:
-        if args.model_type == 'GSDNN':
+        if args.model_type in ('GSDNN', 'Mamba'):
             x = torch.squeeze(x, dim=1)
         x = x.to(device=device, dtype=torch.float32)
         label = label.to(device=device)
@@ -92,12 +101,14 @@ def train_epoch(model, dataloader, criterion, optimizer, device, args):
 
 
 @torch.no_grad()
-def evaluate(model, dataloader, device):
+def evaluate(model, dataloader, device, model_type=''):
     model.eval()
     y_preds, y_labels, y_probs = [], [], []
 
     for x, y in dataloader:
-        if x.ndim != 4:
+        if model_type in ('GSDNN', 'Mamba'):
+            x = torch.squeeze(x, dim=1)
+        elif x.ndim != 4:
             x = torch.squeeze(x, dim=1)
         x = x.to(device=device, dtype=torch.float32)
 
@@ -190,7 +201,8 @@ def train(args):
                 if m.bias is not None:
                     nn.init.constant_(m.bias, 0)
 
-    FLOPs_calculat(model, device, [1, 1, 18, 101])
+    flops_input = [1, 18, 101] if args.model_type == 'Mamba' else [1, 1, 18, 101]
+    FLOPs_calculat(model, device, flops_input)
 
     # Frozen-encoder fine-tuning: no weight decay; full fine-tuning / supervised: use weight_decay
     wd = 0.0 if args.freeze_encoder else args.weight_decay
@@ -224,8 +236,8 @@ def train(args):
     for epoch in range(args.num_epochs):
         train_loss = train_epoch(model, train_loader, criterion, optimizer, device, args)
 
-        train_metrics = evaluate(model, train_loader, device)
-        test_metrics = evaluate(model, test_loader, device) if test_loader else None
+        train_metrics = evaluate(model, train_loader, device, args.model_type)
+        test_metrics = evaluate(model, test_loader, device, args.model_type) if test_loader else None
 
         history['losses'].append(train_loss)
         history['train_accs'].append(train_metrics['accuracy'])
