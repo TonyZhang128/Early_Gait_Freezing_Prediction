@@ -1,0 +1,124 @@
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontSize": "14px",
+    "fontFamily": "Arial, sans-serif"
+  }
+}}%%
+
+graph TB
+    subgraph STAGE1["<b>Stage 1: Self-Supervised Pre-training (SimCLR)</b>"]
+        direction TB
+
+        RAW["<b>Raw Gait Data</b><br/>all_data.mat<br/>(B, 18, 101)"]
+
+        subgraph AUG["Data Augmentation"]
+            direction LR
+            AUG1["View 1<br/>RandomResizedCrop<br/>RandomErasing<br/>Freq Dropout<br/>Channel Shuffle<br/>Time Reversal"]
+            AUG2["View 2<br/>RandomResizedCrop<br/>RandomErasing<br/>Freq Dropout<br/>Channel Shuffle<br/>Time Reversal"]
+        end
+
+        subgraph SIMCLR_ENC["Shared MambaEncoder (Siamese)"]
+            direction TB
+
+            INPROJ["Input Projection<br/>Conv1d(18→64, k=1)<br/>+ BatchNorm1d"]
+
+            subgraph MAMBA_BLOCKS1["MambaBlock x 4 Layers"]
+                direction TB
+
+                subgraph ONE_BLOCK["Single MambaBlock"]
+                    direction TB
+
+                    LN["LayerNorm"]
+
+                    LINEAR_PROJ["Linear Projection<br/>(d_model → 2 x d_inner)<br/>d_inner = d_model x 2"]
+
+                    SPLIT["Split"]
+
+                    subgraph SSM_PATH["SSM Path"]
+                        direction TB
+                        CONV["Depthwise Conv1d<br/>(kernel=4, groups=d_inner)"]
+                        SILU1["SiLU Activation"]
+                        X_PROJ["x_proj Linear<br/>(d_inner → 2N+1)<br/>N=16 (d_state)"]
+                        SPLIT_PARAM["Split Parameters"]
+                        DT["dt_proj Linear<br/>+ Softplus"]
+                        SSCAN["<b>Selective Scan (S6)</b><br/>h_t = exp(δA)·h_{t-1} + δB·x_t<br/>y_t = C·h_t + D·x_t<br/>A: (d_inner, N)<br/>B,C: input-dependent"]
+                        SKIP["Skip: + D · x"]
+                    end
+
+                    subgraph GATE_PATH["Gate Path"]
+                        direction TB
+                        SILU2["SiLU Activation"]
+                    end
+
+                    MULTIPLY["Element-wise Multiply<br/>SSM output × Gate"]
+                    OUT_PROJ["Output Linear<br/>(d_inner → d_model)"]
+                    RESIDUAL["Residual Connection<br/>+ input"]
+                end
+            end
+
+            POOL["AdaptiveAvgPool1d(1)<br/>Temporal Pooling"]
+            DROPOUT["Dropout(0.1)"]
+        end
+
+        subgraph PROJ_HEAD["Projection Head"]
+            direction TB
+            FLAT1["Flatten → (B, d_model)"]
+            FC1["Linear(d_model → proj_out_dim)<br/>ReLU"]
+            FC2["Linear(proj_out_dim → contrastive_dim)<br/>→ (B, contrastive_dim)"]
+        end
+
+        LOSS["<b>NT-Xent Contrastive Loss</b><br/>Temperature τ = 0.1<br/>L = -log( sim(z_i,z_j)/τ / Σ sim/τ )"]
+
+        RAW --> AUG
+        AUG1 -->|"View 1 (B,18,101)"| INPROJ
+        AUG2 -->|"View 2 (B,18,101)"| INPROJ
+
+        INPROJ --> MAMBA_BLOCKS1
+        MAMBA_BLOCKS1 --> DROPOUT --> POOL
+
+        POOL --> FLAT1 --> FC1 --> FC2
+        FC2 --> LOSS
+    end
+
+    subgraph STAGE2["<b>Stage 2: Fine-tuning Classification</b>"]
+        direction TB
+
+        LOAD["Load Pretrained<br/>MambaEncoder Weights"]
+        FREEZE{"Freeze<br/>Encoder?"}
+
+        subgraph FINETUNE_ENC["MambaEncoder (same architecture)"]
+            direction TB
+            F_INPROJ["Input Projection<br/>Conv1d(18→64, k=1)<br/>+ BatchNorm1d"]
+            F_BLOCKS["MambaBlock x 4 Layers<br/>(same as Stage 1)"]
+            F_POOL["AdaptiveAvgPool1d(1)"]
+            F_INPROJ --> F_BLOCKS --> F_POOL
+        end
+
+        CLASSIFIER["<b>Classification Head</b><br/>Linear(d_model → num_classes)<br/>num_classes = 27"]
+        CE_LOSS["CrossEntropy Loss"]
+
+        LOAD --> FREEZE
+        FREEZE -->|"Yes: Freeze encoder<br/>train classifier only"| FINETUNE_ENC
+        FREEZE -->|"No: Train all params"| FINETUNE_ENC
+        FINETUNE_ENC --> CLASSIFIER --> CE_LOSS
+    end
+
+    RAW ==>|"Pretrain weights"| LOAD
+
+    %% Styling
+    classDef inputStyle fill:#E3F2FD,stroke:#1565C0,stroke-width:2px,color:#0D47A1
+    classDef mambaStyle fill:#FFF3E0,stroke:#E65100,stroke-width:2px,color:#BF360C
+    classDef ssmStyle fill:#FBE9E7,stroke:#D84315,stroke-width:2px,color:#BF360C
+    classDef projStyle fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px,color:#1B5E20
+    classDef lossStyle fill:#FCE4EC,stroke:#C62828,stroke-width:2px,color:#B71C1C
+    classDef augStyle fill:#F3E5F5,stroke:#6A1B9A,stroke-width:2px,color:#4A148C
+    classDef decisionStyle fill:#FFFDE7,stroke:#F57F17,stroke-width:2px,color:#E65100
+
+    class RAW,LOAD inputStyle
+    class INPROJ,POOL,DROPOUT,F_INPROJ,F_BLOCKS,F_POOL mambaStyle
+    class LN,LINEAR_PROJ,SPLIT,CONV,SILU1,X_PROJ,SPLIT_PARAM,DT,SSCAN,SKIP,SILU2,MULTIPLY,OUT_PROJ,RESIDUAL ssmStyle
+    class FLAT1,FC1,FC2,CLASSIFIER projStyle
+    class LOSS,CE_LOSS lossStyle
+    class AUG1,AUG2 augStyle
+    class FREEZE decisionStyle
