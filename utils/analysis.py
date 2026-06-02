@@ -1,11 +1,11 @@
 import os
 import random
-import numpy as np
 
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 import torch.nn as nn
 
-import matplotlib.pyplot as plt
 
 def set_seed(seed):
     """设置随机种子，确保实验可重复性"""
@@ -17,7 +17,8 @@ def set_seed(seed):
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
-        
+
+
 def save_checkpoint(model, save_dir, epoch, loss):
     """保存模型检查点
 
@@ -31,13 +32,13 @@ def save_checkpoint(model, save_dir, epoch, loss):
     """
     os.makedirs(save_dir, exist_ok=True)
     checkpoint = {
-        'epoch': epoch,
-        'model_state_dict': model.state_dict(),
-        'loss': loss,
+        "epoch": epoch,
+        "model_state_dict": model.state_dict(),
+        "loss": loss,
     }
 
     # 保存检查点
-    save_path = os.path.join(save_dir, 'best_self_sup.pth')
+    save_path = os.path.join(save_dir, "best_self_sup.pth")
     torch.save(checkpoint, save_path)
 
 
@@ -49,14 +50,14 @@ def plot_loss_curve(loss_values, save_dir):
         save_dir: 保存目录
     """
     plt.figure(figsize=(10, 5))
-    plt.plot(loss_values, label='Training Loss')
-    plt.title('Training Loss Over Epochs')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
+    plt.plot(loss_values, label="Training Loss")
+    plt.title("Training Loss Over Epochs")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
     plt.legend()
 
     # 保存图像
-    save_path = os.path.join(save_dir, 'loss_curve.png')
-    plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    print(f'Loss curve saved to {save_path}')
+    save_path = os.path.join(save_dir, "loss_curve.png")
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+    print(f"Loss curve saved to {save_path}")
     plt.close()
